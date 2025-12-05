@@ -5,38 +5,30 @@
   <title>時光旅程</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Tailwind：樣式系統 -->
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- ⭐ Lucide Icons UMD 版本（可支援填滿 Fill + Stroke） -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
   <style>
     body {
       background: #0f172a;
       color: white;
     }
-    .animate-fade-in {
-      animation: fadeIn 0.5s ease-out;
-    }
-    .animate-fade-in-up {
-      animation: fadeInUp 0.5s ease-out;
-    }
-    .animate-fade-in-down {
-      animation: fadeInDown 0.5s ease-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0 }
-      to { opacity: 1 }
-    }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(10px) }
-      to { opacity: 1; transform: translateY(0) }
-    }
-    @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-10px) }
-      to { opacity: 1; transform: translateY(0) }
-    }
-    .animate-heartbeat {
-      animation: heartbeat 1.5s ease-in-out infinite both;
-    }
+    .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+    .animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
+    .animate-fade-in-down { animation: fadeInDown 0.5s ease-out; }
+
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px) } to { opacity: 1; transform: translateY(0) } }
+
     @keyframes heartbeat {
       0% { transform: scale(1); }
       14% { transform: scale(1.15); }
@@ -44,905 +36,679 @@
       42% { transform: scale(1.15); }
       70% { transform: scale(1); }
     }
+    .animate-heartbeat { animation: heartbeat 1.5s ease-in-out infinite both; }
   </style>
 </head>
+
 <body class="min-h-screen">
-  <div id="root"></div>
+<div id="root"></div>
 
-  <!-- React + ReactDOM + Babel（讓瀏覽器直接跑 JSX） -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
 
-  <!-- Lucide 的 UMD 版本（提供 React icon 組件） -->
-  <script src="https://unpkg.com/lucide-react/dist/lucide-react.umd.js"></script>
+const { useState, useEffect, useMemo } = React;
 
-  <!-- 你的整個 App 寫在這裡 -->
-  <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+/* -----------------------------------------
+   ⭐ Lucide React Wrapper（支援 fill + stroke）
+----------------------------------------- */
+const Icon = ({ name, className = "" }) => (
+  <i data-lucide={name} className={className}></i>
+);
 
-    // ✅ 用 lucide-react 的 React 組件（支援 strokeWidth / fill / className）
-    const {
-      Calendar, Clock, Heart, Edit2, RotateCcw, Info, Activity,
-      Users, Plus, Trash2, ArrowLeft, ChevronRight, Gift, User,
-      Star, Sparkles, X, Check, AlertTriangle, Hourglass
-    } = lucideReact;
+const Calendar = (p) => <Icon name="calendar" {...p} />;
+const Clock = (p) => <Icon name="clock" {...p} />;
+const Heart = (p) => <Icon name="heart" {...p} />;
+const Edit2 = (p) => <Icon name="edit-2" {...p} />;
+const RotateCcw = (p) => <Icon name="rotate-ccw" {...p} />;
+const Info = (p) => <Icon name="info" {...p} />;
+const Activity = (p) => <Icon name="activity" {...p} />;
+const Users = (p) => <Icon name="users" {...p} />;
+const Plus = (p) => <Icon name="plus" {...p} />;
+const Trash2 = (p) => <Icon name="trash-2" {...p} />;
+const ArrowLeft = (p) => <Icon name="arrow-left" {...p} />;
+const ChevronRight = (p) => <Icon name="chevron-right" {...p} />;
+const Gift = (p) => <Icon name="gift" {...p} />;
+const User = (p) => <Icon name="user" {...p} />;
+const Star = (p) => <Icon name="star" {...p} />;
+const Sparkles = (p) => <Icon name="sparkles" {...p} />;
+const X = (p) => <Icon name="x" {...p} />;
+const Check = (p) => <Icon name="check" {...p} />;
+const AlertTriangle = (p) => <Icon name="alert-triangle" {...p} />;
+const Hourglass = (p) => <Icon name="hourglass" {...p} />;
 
-    // --- 第三方農曆庫加載 (動態注入) ---
-    const useLunar = () => {
-      const [isLoaded, setIsLoaded] = useState(false);
+/* -----------------------------------------
+   每次重新 render → 讓 Lucide 轉換 SVG
+----------------------------------------- */
+const useLucide = () => {
+  useEffect(() => {
+    if (window.lucide && window.lucide.createIcons) {
+      window.lucide.createIcons();
+    }
+  });
+};
+/* -----------------------------------------
+   載入農曆（不動你的原本寫法）
+----------------------------------------- */
+const useLunar = () => {
+  const [isLoaded, setIsLoaded] = useState(false);
 
-      useEffect(() => {
-        if (window.Solar && window.Lunar) {
-          setIsLoaded(true);
-          return;
-        }
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js';
-        script.async = true;
-        script.onload = () => setIsLoaded(true);
-        document.body.appendChild(script);
-      }, []);
+  useEffect(() => {
+    if (window.Solar && window.Lunar) {
+      setIsLoaded(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js";
+    script.async = true;
+    script.onload = () => setIsLoaded(true);
+    document.body.appendChild(script);
+  }, []);
 
-      return isLoaded;
-    };
+  return isLoaded;
+};
 
-    // --- 子元件: 確認視窗 ---
-    const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
-      if (!isOpen) return null;
-      
-      return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-          <div 
-            className="bg-[#1e293b] border border-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-100 animate-fade-in-up"
-            onClick={e => e.stopPropagation()} 
-          >
-            <div className="flex items-center gap-3 mb-3 text-red-400">
-              <div className="p-2 bg-red-500/10 rounded-full">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-white">{title}</h3>
-            </div>
-            <p className="text-gray-400 mb-6 leading-relaxed">{message}</p>
-            <div className="flex gap-3">
-              <button 
-                onClick={onClose}
-                className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-gray-300 hover:bg-white/10 transition-colors font-medium"
-              >
-                取消
-              </button>
-              <button 
-                onClick={onConfirm}
-                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/20 transition-all transform hover:scale-[1.02] font-bold"
-              >
-                確認刪除
-              </button>
-            </div>
+/* -----------------------------------------
+   通用確認視窗
+----------------------------------------- */
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#1e293b] border border-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-fade-in-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 mb-3 text-red-400">
+          <div className="p-2 bg-red-500/10 rounded-full">
+            <AlertTriangle className="w-6 h-6" />
           </div>
+          <h3 className="text-xl font-bold text-white">{title}</h3>
         </div>
-      );
-    };
+        <p className="text-gray-400 mb-6 leading-relaxed">{message}</p>
 
-    // --- 子元件: 數字卡片 ---
-    const NumberCard = ({ value, label, subLabel, highlight = false }) => (
-      <div className={
-        "relative flex flex-col items-center justify-center p-4 rounded-2xl backdrop-blur-md border border-white/10 transition-all duration-300 hover:transform hover:scale-105 shadow-lg shadow-black/10 " + 
-        (highlight ? "bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-indigo-300/30" : "bg-white/5")
-      }>
-        <span className={
-          "text-4xl md:text-5xl font-mono font-bold tracking-tight tabular-nums " +
-          (highlight ? "text-indigo-200" : "text-white")
-        }>
-          {value}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 rounded-xl bg-white/5 text-gray-300 hover:bg-white/10 transition-colors font-medium"
+          >
+            取消
+          </button>
+
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/20 transition-all font-bold"
+          >
+            確認刪除
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* -----------------------------------------
+   小型數字卡片（保留你的美術風格）
+----------------------------------------- */
+const NumberCard = ({ value, label, subLabel, highlight = false }) => (
+  <div
+    className={
+      "relative flex flex-col items-center justify-center p-4 rounded-2xl backdrop-blur-md border border-white/10 hover:scale-105 shadow-lg transition-all " +
+      (highlight
+        ? "bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-indigo-300/30"
+        : "bg-white/5")
+    }
+  >
+    <span
+      className={
+        "text-4xl md:text-5xl font-mono font-bold tracking-tight " +
+        (highlight ? "text-indigo-200" : "text-white")
+      }
+    >
+      {value}
+    </span>
+    <span className="text-xs md:text-sm text-gray-300 mt-1 uppercase tracking-widest">
+      {label}
+    </span>
+    {subLabel && <span className="text-[10px] text-gray-400">{subLabel}</span>}
+  </div>
+);
+
+/* -----------------------------------------
+   里程碑行（保留你的漸層填充動畫）
+----------------------------------------- */
+const MilestoneRow = React.memo(({ label, value, unit }) => (
+  <div className="group flex justify-between items-center py-5 border-b border-white/5 hover:bg-white/5 px-4 -mx-4 rounded-xl transition-all">
+    <span className="text-gray-400 group-hover:text-indigo-200 transition-colors font-medium flex items-center gap-2">
+      <Activity className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
+      {label}
+    </span>
+
+    <div className="relative">
+      <span className="font-mono text-xl md:text-2xl text-white/20">
+        {value} <span className="text-xs md:text-sm font-sans">{unit}</span>
+      </span>
+
+      <div className="absolute bottom-0 left-0 w-full h-0 overflow-hidden transition-[height] duration-[2000ms] ease group-hover:h-full">
+        <span className="absolute bottom-0 left-0 w-full font-mono text-xl md:text-2xl bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-purple-300">
+          {value} <span className="text-xs md:text-sm text-indigo-200">{unit}</span>
         </span>
-        <span className="text-xs md:text-sm text-gray-300 mt-1 uppercase tracking-widest">{label}</span>
-        {subLabel && <span className="text-[10px] text-gray-400">{subLabel}</span>}
+      </div>
+    </div>
+  </div>
+));
+
+/* -----------------------------------------
+   時間差計算（你的原本程式完整保留）
+----------------------------------------- */
+const calculateDetails = (dateStr, timeStr) => {
+  const start = new Date(dateStr + "T" + timeStr);
+  const now = new Date();
+  if (start > now) return null;
+
+  const diff = now - start;
+  const totalSeconds = Math.floor(diff / 1000);
+
+  let years = now.getFullYear() - start.getFullYear();
+  let months = now.getMonth() - start.getMonth();
+  let days = now.getDate() - start.getDate();
+  let hours = now.getHours() - start.getHours();
+  let minutes = now.getMinutes() - start.getMinutes();
+  let seconds = now.getSeconds() - start.getSeconds();
+
+  if (seconds < 0) { seconds += 60; minutes--; }
+  if (minutes < 0) { minutes += 60; hours--; }
+  if (hours < 0) { hours += 24; days--; }
+  if (days < 0) {
+    const pm = new Date(now.getFullYear(), now.getMonth(), 0);
+    days += pm.getDate();
+    months--;
+  }
+  if (months < 0) { months += 12; years--; }
+
+  return { years, months, days, hours, minutes, seconds, totalSeconds };
+};
+
+/* -----------------------------------------
+   倒數計算（你的原本邏輯保留）
+----------------------------------------- */
+const calculateCountdown = (dateStr, timeStr) => {
+  const target = new Date(dateStr + "T" + timeStr);
+  const now = new Date();
+  const diff = target - now;
+
+  const isSameDay =
+    target.getFullYear() === now.getFullYear() &&
+    target.getMonth() === now.getMonth() &&
+    target.getDate() === now.getDate();
+
+  if (diff > 0) {
+    const totalSeconds = Math.floor(diff / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    let tempDate = new Date(now);
+    let Y = target.getFullYear() - tempDate.getFullYear();
+    let M = target.getMonth() - tempDate.getMonth();
+    let D = target.getDate() - tempDate.getDate();
+
+    if (D < 0) {
+      const pm = new Date(target.getFullYear(), target.getMonth(), 0);
+      D += pm.getDate();
+      M--;
+    }
+    if (M < 0) { M += 12; Y--; }
+
+    return { status: "future", years: Y, months: M, days: D, hours, minutes, seconds, totalSeconds, totalDays: days };
+  }
+
+  if (isSameDay) {
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const sec = Math.floor((end - now) / 1000);
+
+    return {
+      status: "today",
+      years: 0,
+      months: 0,
+      days: 0,
+      hours: Math.floor(sec / 3600),
+      minutes: Math.floor((sec % 3600) / 60),
+      seconds: sec % 60,
+      totalSeconds: sec
+    };
+  }
+
+  return { status: "past" };
+};
+
+/* -----------------------------------------
+   農曆文字
+----------------------------------------- */
+const getLunarString = (dateStr) => {
+  if (!window.Solar) return "載入中...";
+  try {
+    const d = new Date(dateStr);
+    const s = window.Solar.fromYmd(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    const l = s.getLunar();
+    return `${l.getMonthInChinese()}月${l.getDayInChinese()}`;
+  } catch {
+    return "";
+  }
+};
+
+/* -----------------------------------------
+   ⭐ DetailTimer（完整可用 Lucide Icons）
+----------------------------------------- */
+const DetailTimer = ({ profile, onBack, isLoaded }) => {
+  useLucide();
+
+  const [now, setNow] = useState(new Date());
+  const [stats, setStats] = useState(null);
+  const [quoteIndex, setQuoteIndex] = useState(0);
+
+  const quotes = [
+    "時間不語，卻回答了所有問題。",
+    "每一個不曾起舞的日子，都是對生命的辜負。",
+    "逝者如斯夫，不舍晝夜。",
+    "既然時間留不住，那就記住它。",
+    "當下的每一個瞬間，都是未來的回憶。",
+    "歲月極美，在於它必然的流逝。",
+    "時間是送給我們最公平的禮物。",
+    "往事不回頭，未來不將就。",
+    "生命不是要活得長，而是要活得好。",
+    "你所浪費的今天，是昨天死去的人奢望的明天。"
+  ];
+
+  /* 計時更新 */
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  /* 計算數據 */
+  useEffect(() => {
+    setStats(
+      profile.type === "countdown"
+        ? calculateCountdown(profile.date, profile.time)
+        : calculateDetails(profile.date, profile.time)
+    );
+  }, [now, profile]);
+
+  if (!stats) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="text-xl text-red-300 font-bold">計算中...</div>
+        <button onClick={onBack} className="underline text-gray-400 hover:text-white">
+          返回列表
+        </button>
       </div>
     );
+  }
 
-    // --- 子元件: 里程碑行 ---
-    const MilestoneRow = React.memo(({ label, value, unit }) => (
-      <div className="group flex justify-between items-center py-5 border-b border-white/5 first:pt-0 last:border-0 hover:bg-white/5 px-4 -mx-4 rounded-xl transition-all duration-300 cursor-default">
-        <span className="text-gray-400 group-hover:text-indigo-200 transition-colors font-medium tracking-wide flex items-center gap-2">
-          <Activity className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
-          {label}
-        </span>
-        <div className="relative">
-          <span className="font-mono text-xl md:text-2xl text-white/20 tabular-nums block">
-            {value} <span className="text-xs md:text-sm font-sans">{unit}</span>
-          </span>
-          <div className="absolute bottom-0 left-0 w-full h-0 overflow-hidden transition-[height] duration-[2000ms] ease-in-out group-hover:h-full">
-            <span className="absolute bottom-0 left-0 w-full font-mono text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300 tabular-nums text-right">
-              {value} <span className="text-xs md:text-sm font-sans text-indigo-200">{unit}</span>
-            </span>
+  /* 倒數已結束 */
+  if (profile.type === "countdown" && stats.status === "past") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] animate-fade-in">
+        <div className="p-4 bg-gray-700/50 rounded-full mb-4">
+          <Check className="w-12 h-12 text-gray-400" />
+        </div>
+        <h2 className="text-3xl font-bold">{profile.name}</h2>
+        <div className="text-gray-400 text-xl">這個日子已經過去了</div>
+        <button onClick={onBack} className="mt-6 px-6 py-2 bg-white/10 rounded-lg hover:bg-white/20">
+          返回列表
+        </button>
+      </div>
+    );
+  }
+
+  const formatNum = (n) => n.toString().padStart(2, "0");
+  /* -----------------------------------------
+       DetailTimer（續）
+  ----------------------------------------- */
+
+  const themeColor =
+    profile.type === "countdown"
+      ? "from-sky-500/20 to-blue-500/20 border-sky-300/30"
+      : profile.type === "anniversary"
+      ? "from-pink-500/20 to-rose-500/20 border-pink-300/30"
+      : "from-indigo-500/20 to-purple-500/20 border-indigo-300/30";
+
+  const highlightText =
+    profile.type === "countdown"
+      ? "text-sky-200"
+      : profile.type === "anniversary"
+      ? "text-pink-200"
+      : "text-indigo-200";
+
+  const CustomNumberCard = ({ value, label, subLabel }) => (
+    <div
+      className={
+        "relative flex flex-col items-center justify-center p-4 rounded-2xl backdrop-blur-md border border-white/10 bg-gradient-to-br " +
+        themeColor +
+        " shadow-lg hover:scale-105 transition-all"
+      }
+    >
+      <span className={"text-4xl md:text-5xl font-mono font-bold " + highlightText}>
+        {value}
+      </span>
+      <span className="text-xs md:text-sm text-gray-300 mt-1">{label}</span>
+      {subLabel && <span className="text-[10px] text-gray-400">{subLabel}</span>}
+    </div>
+  );
+
+  return (
+    <div className="animate-fade-in space-y-10 pb-12">
+
+      {/* 返回按鈕 + 標題區 */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          返回列表
+        </button>
+
+        <div className="text-right">
+          <h2 className="text-xl font-bold">{profile.name}</h2>
+          <div className="flex justify-end gap-2 text-xs text-gray-400">
+            <span>{profile.date}</span>
+            {isLoaded && profile.type === "life" && (
+              <span className="text-indigo-300">(農 {getLunarString(profile.date)})</span>
+            )}
           </div>
         </div>
       </div>
-    ));
 
-    // --- 輔助函數 ---
-    const calculateDetails = (dateStr, timeStr) => {
-      const start = new Date(dateStr + "T" + timeStr);
-      const now = new Date();
-      if (start > now) return null;
+      {/* 主要數字區 */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <NumberCard value={stats.years} label="年" highlight />
+        <NumberCard value={stats.months} label="月" />
+        <NumberCard value={stats.days} label="天" />
+        <NumberCard value={formatNum(stats.hours)} label="小時" />
+        <NumberCard value={formatNum(stats.minutes)} label="分鐘" />
+        <NumberCard value={formatNum(stats.seconds)} label="秒" subLabel="即時跳動" />
+      </div>
 
-      const diffInMs = now.getTime() - start.getTime();
-      const totalSeconds = Math.floor(diffInMs / 1000);
-
-      let years = now.getFullYear() - start.getFullYear();
-      let months = now.getMonth() - start.getMonth();
-      let days = now.getDate() - start.getDate();
-      let hours = now.getHours() - start.getHours();
-      let minutes = now.getMinutes() - start.getMinutes();
-      let seconds = now.getSeconds() - start.getSeconds();
-
-      if (seconds < 0) { seconds += 60; minutes--; }
-      if (minutes < 0) { minutes += 60; hours--; }
-      if (hours < 0) { hours += 24; days--; }
-      if (days < 0) {
-        const previousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-        days += previousMonth.getDate();
-        months--;
-      }
-      if (months < 0) { months += 12; years--; }
-
-      return { years, months, days, hours, minutes, seconds, totalSeconds };
-    };
-
-    const calculateCountdown = (dateStr, timeStr) => {
-      const target = new Date(dateStr + "T" + timeStr);
-      const now = new Date();
-      const diffInMs = target.getTime() - now.getTime();
-
-      const isSameDay =
-        target.getFullYear() === now.getFullYear() &&
-        target.getMonth() === now.getMonth() &&
-        target.getDate() === now.getDate();
-
-      if (diffInMs > 0) {
-        const totalSeconds = Math.floor(diffInMs / 1000);
-        const days = Math.floor(totalSeconds / (3600 * 24));
-        const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        let tempDate = new Date(now);
-        let cYears = target.getFullYear() - tempDate.getFullYear();
-        let cMonths = target.getMonth() - tempDate.getMonth();
-        let cDays = target.getDate() - tempDate.getDate();
-
-        if (cDays < 0) {
-          const prevMonth = new Date(target.getFullYear(), target.getMonth(), 0);
-          cDays += prevMonth.getDate();
-          cMonths--;
+      {/* 總秒數 + 愛心動畫 */}
+      <div
+        className={
+          "relative rounded-3xl p-8 shadow-xl border border-white/5 bg-gradient-to-br overflow-hidden " +
+          themeColor
         }
-        if (cMonths < 0) {
-          cMonths += 12;
-          cYears--;
-        }
-
-        return {
-          status: 'future',
-          years: cYears, months: cMonths, days: cDays,
-          hours, minutes, seconds,
-          totalSeconds,
-          totalDays: days
-        };
-      } else {
-        if (isSameDay) {
-          const endOfDay = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-            23, 59, 59
-          );
-          const endDiff = endOfDay.getTime() - now.getTime();
-          const endTotalSeconds = Math.floor(endDiff / 1000);
-
-          const hours = Math.floor(endTotalSeconds / 3600);
-          const minutes = Math.floor((endTotalSeconds % 3600) / 60);
-          const seconds = endTotalSeconds % 60;
-
-          return {
-            status: 'today',
-            years: 0, months: 0, days: 0,
-            hours, minutes, seconds,
-            totalSeconds: endTotalSeconds
-          };
-        } else {
-          return { status: 'past' };
-        }
-      }
-    };
-
-    const getLunarString = (dateStr) => {
-      if (!window.Solar) return "載入農曆中...";
-      try {
-        const date = new Date(dateStr);
-        const solar = window.Solar.fromYmd(
-          date.getFullYear(),
-          date.getMonth() + 1,
-          date.getDate()
-        );
-        const lunar = solar.getLunar();
-        return lunar.getMonthInChinese() + "月" + lunar.getDayInChinese();
-      } catch (e) {
-        return "";
-      }
-    };
-
-    // --- 詳細計時頁面 ---
-    const DetailTimer = ({ profile, onBack, isLoaded }) => {
-      const [currentTime, setCurrentTime] = useState(new Date());
-      const [stats, setStats] = useState(null);
-      const [quoteIndex, setQuoteIndex] = useState(0);
-
-      const quotes = useMemo(() => [
-        "時間不語，卻回答了所有問題。",
-        "每一個不曾起舞的日子，都是對生命的辜負。",
-        "逝者如斯夫，不舍晝夜。",
-        "既然時間留不住，那就記住它。",
-        "當下的每一個瞬間，都是未來的回憶。",
-        "歲月極美，在於它必然的流逝。",
-        "時間是送給我們最公平的禮物。",
-        "往事不回頭，未來不將就。",
-        "生命不是要活得長，而是要活得好。",
-        "你所浪費的今天，是昨天死去的人奢望的明天。"
-      ], []);
-
-      useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        if (profile.type === 'countdown') {
-          setStats(calculateCountdown(profile.date, profile.time));
-        } else {
-          setStats(calculateDetails(profile.date, profile.time));
-        }
-        return () => clearInterval(timer);
-      }, [profile]);
-
-      useEffect(() => {
-        const quoteTimer = setInterval(() => {
-          setQuoteIndex((prev) => (prev + 1) % quotes.length);
-        }, 8000);
-        return () => clearInterval(quoteTimer);
-      }, [quotes.length]);
-
-      useEffect(() => {
-        if (profile.type === 'countdown') {
-          setStats(calculateCountdown(profile.date, profile.time));
-        } else {
-          setStats(calculateDetails(profile.date, profile.time));
-        }
-      }, [currentTime, profile]);
-
-      if (!stats) {
-        return (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-            <div className="text-xl text-red-300 font-bold">計算中...</div>
-            <button onClick={onBack} className="text-gray-400 hover:text-white underline">
-              返回列表
-            </button>
-          </div>
-        );
-      }
-
-      if (profile.type === 'countdown' && stats.status === 'past') {
-        return (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4 animate-fade-in">
-            <div className="p-4 bg-gray-700/50 rounded-full mb-4">
-              <Check className="w-12 h-12 text-gray-400" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-2">{profile.name}</h2>
-            <div className="text-xl text-gray-400 font-bold">這個日子已經過去了</div>
-            <div className="text-sm text-gray-500 mt-2">{profile.date}</div>
-            <button
-              onClick={onBack}
-              className="mt-8 px-6 py-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"
-            >
-              返回列表
-            </button>
-          </div>
-        );
-      }
-
-      const formatNum = (num) => num.toString().padStart(2, '0');
-      const handleQuoteClick = () => {
-        setQuoteIndex((prev) => (prev + 1) % quotes.length);
-      };
-
-      const themeColor =
-        profile.type === 'countdown'
-          ? 'from-sky-500/20 to-blue-500/20 border-sky-300/30'
-          : profile.type === 'anniversary'
-          ? 'from-pink-500/20 to-rose-500/20 border-pink-300/30'
-          : 'from-indigo-500/20 to-purple-500/20 border-indigo-300/30';
-
-      const highlightText =
-        profile.type === 'countdown'
-          ? 'text-sky-200'
-          : profile.type === 'anniversary'
-          ? 'text-pink-200'
-          : 'text-indigo-200';
-
-      const CustomNumberCard = ({ value, label, subLabel }) => (
-        <div className={
-          "relative flex flex-col items-center justify-center p-4 rounded-2xl backdrop-blur-md border border-white/10 transition-all duration-300 hover:transform hover:scale-105 bg-gradient-to-br " +
-          themeColor +
-          " shadow-lg shadow-black/10"
-        }>
-          <span className={
-            "text-4xl md:text-5xl font-mono font-bold tracking-tight tabular-nums " +
-            highlightText
-          }>
-            {value}
-          </span>
-          <span className="text-xs md:text-sm text-gray-300 mt-1 uppercase tracking-widest">
-            {label}
-          </span>
-          {subLabel && <span className="text-[10px] text-gray-400">{subLabel}</span>}
-        </div>
-      );
-
-      return (
-        <div className="animate-fade-in space-y-8 pb-12">
-          <div className="flex items-center justify-between mb-8">
-            <button
-              onClick={onBack}
-              className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>返回列表</span>
-            </button>
-
-            <div className="text-right">
-              <h2 className="text-xl font-bold text-white">{profile.name}</h2>
-              <div className="flex items-center justify-end gap-2 text-xs text-gray-400">
-                {profile.type === 'countdown' && stats.status === 'today' ? (
-                  <span className="text-amber-400 font-bold animate-pulse mr-2">
-                    節日結束倒計時
-                  </span>
-                ) : profile.type === 'countdown' ? (
-                  <span className="text-sky-300 mr-2">即將到來</span>
-                ) : (
-                  <span className="mr-2">{profile.relation}</span>
-                )}
-
-                <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
-                <span>{profile.date}</span>
-                {isLoaded && profile.type === 'life' && (
-                  <span className="text-indigo-300">
-                    {" "}
-                    (農曆 {getLunarString(profile.date)})
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-            {profile.type === 'countdown' && stats.status === 'today' ? (
-              <>
-                <div className="hidden md:block col-span-3"></div>
-                <CustomNumberCard value={formatNum(stats.hours)} label="小時" />
-                <CustomNumberCard value={formatNum(stats.minutes)} label="分鐘" />
-                <CustomNumberCard
-                  value={formatNum(stats.seconds)}
-                  label="秒"
-                  subLabel="即時跳動"
-                />
-              </>
-            ) : (
-              <>
-                <NumberCard value={stats.years} label="年" highlight={profile.type !== 'countdown'} />
-                <NumberCard value={stats.months} label="個月" />
-                <NumberCard value={stats.days} label="天" />
-                <NumberCard value={formatNum(stats.hours)} label="小時" />
-                <NumberCard value={formatNum(stats.minutes)} label="分鐘" />
-                <NumberCard
-                  value={formatNum(stats.seconds)}
-                  label="秒"
-                  subLabel="即時跳動"
-                />
-              </>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            <div className={
-              "bg-gradient-to-br rounded-3xl p-8 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all duration-500 shadow-xl shadow-black/20 " +
-              (profile.type === 'countdown'
-                ? stats.status === 'today'
-                  ? "from-amber-600/40 to-orange-700/40"
-                  : "from-sky-800/40 to-blue-900/40"
-                : profile.type === 'anniversary'
-                ? "from-pink-900/40 to-rose-900/40"
-                : "from-slate-800 to-slate-900")
-            }>
-              <div className="absolute bottom-2 right-2 w-32 h-32 opacity-20 group-hover:opacity-40 transition-opacity duration-500 group-hover:animate-heartbeat pointer-events-none">
-                {profile.type === 'countdown' ? (
-                  <Hourglass className="w-full h-full text-yellow-400 fill-yellow-400" strokeWidth={1} />
-                ) : (
-                  <Heart className="w-full h-full text-pink-500 fill-pink-500" strokeWidth={1} />
-                )}
-              </div>
-
-              <h3 className="text-gray-400 text-sm font-medium mb-2 uppercase tracking-wider relative z-10">
-                {profile.type === 'countdown'
-                  ? stats.status === 'today'
-                    ? '距離今天結束還有'
-                    : '距離目標還有'
-                  : profile.type === 'life'
-                  ? '在這個星球上的總秒數'
-                  : '累積總秒數'}
-              </h3>
-
-              <div className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-300 tracking-tighter relative z-10 transition-all duration-1000 tabular-nums whitespace-nowrap overflow-visible">
-                {stats.totalSeconds.toLocaleString()}{" "}
-                <span className="text-base text-gray-400 font-sans">秒</span>
-              </div>
-
-              <p className="text-xs text-gray-500 mt-4 relative z-10 transition-colors max-w-[80%]">
-                {profile.type === 'countdown'
-                  ? stats.status === 'today'
-                    ? '把握最後的時光'
-                    : '期待著那一刻的到來'
-                  : profile.type === 'life'
-                  ? '每一次心跳都是時間的饋贈'
-                  : '每一秒都是珍貴的回憶'}
-              </p>
-            </div>
-
-            <div className="flex flex-col justify-center px-4 py-2">
-              <h3 className="text-gray-400 text-sm font-medium mb-6 uppercase tracking-wider px-4">
-                {profile.type === 'countdown' ? '倒數統計' : '累積里程碑'}
-              </h3>
-              <div className="space-y-2">
-                {profile.type === 'countdown' ? (
-                  <>
-                    <MilestoneRow
-                      label="總天數"
-                      value={stats.totalDays || Math.floor(stats.totalSeconds / (3600 * 24))}
-                      unit="天"
-                    />
-                    <MilestoneRow
-                      label="總小時"
-                      value={Math.floor(stats.totalSeconds / 3600).toLocaleString()}
-                      unit="時"
-                    />
-                  </>
-                ) : (
-                  <>
-                    <MilestoneRow
-                      label="總天數"
-                      value={Math.floor(stats.totalSeconds / (24 * 3600)).toLocaleString()}
-                      unit="天"
-                    />
-                    <MilestoneRow
-                      label="總週數"
-                      value={Math.floor(stats.totalSeconds / (7 * 24 * 3600)).toLocaleString()}
-                      unit="週"
-                    />
-                    <MilestoneRow
-                      label="總小時"
-                      value={Math.floor(stats.totalSeconds / 3600).toLocaleString()}
-                      unit="時"
-                    />
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="mt-12 pt-8 border-t border-white/5 text-center relative overflow-hidden cursor-pointer select-none group"
-            onClick={handleQuoteClick}
-            title="點擊切換名言"
-          >
-            <div className="flex justify-center gap-4 mb-4 text-indigo-300/40 group-hover:text-indigo-300/60 transition-colors">
-              <Sparkles className="w-4 h-4" />
-              <Star className="w-4 h-4" />
-              <Sparkles className="w-4 h-4" />
-            </div>
-
-            <p className="text-sm font-serif text-gray-400 italic tracking-wide transition-opacity duration-500 min-h-[1.5em] group-hover:text-indigo-200">
-              "{quotes[quoteIndex]}"
-            </p>
-            <div className="mt-2 text-[10px] text-gray-600 uppercase tracking-[0.2em]">
-              Time Journey • {profile.name}
-            </div>
-          </div>
-        </div>
-      );
-    };
-
-    // --- 主程式 ---
-    const LifeJourney = () => {
-      const isLoaded = useLunar();
-      const [view, setView] = useState('dashboard');
-      const [activeTab, setActiveTab] = useState('life');
-      const [isDeleteMode, setIsDeleteMode] = useState(false);
-      const [deleteTargetId, setDeleteTargetId] = useState(null);
-
-      const [profiles, setProfiles] = useState(() => {
-        const saved = localStorage.getItem('lifeJourneyProfiles');
-        return saved ? JSON.parse(saved) : [];
-      });
-
-      const [selectedProfileId, setSelectedProfileId] = useState(null);
-
-      const [formData, setFormData] = useState({
-        name: '',
-        relation: '',
-        date: '',
-        time: '00:00',
-        type: 'life'
-      });
-
-      useEffect(() => {
-        localStorage.setItem('lifeJourneyProfiles', JSON.stringify(profiles));
-      }, [profiles]);
-
-      const handleAddProfile = () => {
-        if (!formData.name || !formData.date) return;
-        const newProfile = {
-          id: Date.now().toString(),
-          ...formData
-        };
-        setProfiles([...profiles, newProfile]);
-        setFormData({ name: '', relation: '', date: '', time: '00:00', type: activeTab });
-        setView('dashboard');
-      };
-
-      const requestDelete = (e, id) => {
-        e.stopPropagation();
-        setDeleteTargetId(id);
-      };
-
-      const confirmDelete = () => {
-        if (deleteTargetId) {
-          setProfiles(prev => {
-            const newProfiles = prev.filter(p => p.id !== deleteTargetId);
-            if (newProfiles.length === 0) setIsDeleteMode(false);
-            return newProfiles;
-          });
-          if (selectedProfileId === deleteTargetId) {
-            setView('dashboard');
-            setSelectedProfileId(null);
-          }
-          setDeleteTargetId(null);
-        }
-      };
-
-      const openDetail = (profile) => {
-        if (isDeleteMode) return;
-        setSelectedProfileId(profile.id);
-        setView('detail');
-      };
-
-      const displayProfiles = useMemo(
-        () => profiles.filter(p => p.type === activeTab),
-        [profiles, activeTab]
-      );
-
-      const selectedProfile = useMemo(
-        () => profiles.find(p => p.id === selectedProfileId),
-        [profiles, selectedProfileId]
-      );
-
-      const renderForm = () => (
-        <div className="max-w-md mx-auto bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl animate-fade-in-up">
-          <div className="flex items-center space-x-2 mb-6 text-indigo-300">
-            {formData.type === 'life' ? (
-              <User className="w-5 h-5" />
-            ) : formData.type === 'anniversary' ? (
-              <Gift className="w-5 h-5" />
-            ) : (
-              <Hourglass className="w-5 h-5" />
-            )}
-            <span className="font-semibold tracking-wide">
-              新增{formData.type === 'life' ? '時光足跡' : formData.type === 'anniversary' ? '紀念日' : '倒數日'}
-            </span>
-          </div>
-
-          <div className="space-y-5">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">顯示名稱</label>
-              <input
-                type="text"
-                placeholder={formData.type === 'countdown' ? "例如：期末考、新年" : "例如：王小明、我們的婚禮"}
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-gray-600"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">
-                {formData.type === 'countdown' ? '備註 / 描述' : '關係 / 描述 (自訂)'}
-              </label>
-              <input
-                type="text"
-                placeholder={formData.type === 'countdown' ? "例如：重要考試、全家團圓" : "例如：摯友、父親、在一起"}
-                value={formData.relation}
-                onChange={e => setFormData({ ...formData, relation: e.target.value })}
-                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-gray-600"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">日期</label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={e => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">時間</label>
-                <input
-                  type="time"
-                  value={formData.time}
-                  onChange={e => setFormData({ ...formData, time: e.target.value })}
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={() => setView('dashboard')}
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white font-medium py-3 rounded-xl transition-all"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleAddProfile}
-                disabled={!formData.name || !formData.date}
-                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
-              >
-                儲存
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-
-      const renderDashboard = () => (
-        <div className="animate-fade-in max-w-4xl mx-auto pb-24">
-          <ConfirmModal
-            isOpen={!!deleteTargetId}
-            onClose={() => setDeleteTargetId(null)}
-            onConfirm={confirmDelete}
-            title="刪除確認"
-            message="您確定要刪除這筆紀錄嗎？刪除後將無法復原。"
-          />
-
-          <div className="flex p-1 bg-white/5 rounded-2xl mb-8 w-fit mx-auto border border-white/10 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('life')}
-              className={
-                "flex items-center space-x-2 px-6 py-2 rounded-xl transition-all text-sm font-medium whitespace-nowrap " +
-                (activeTab === 'life' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-400 hover:text-white')
-              }
-            >
-              <User className="w-4 h-4" />
-              <span>時光足跡</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('anniversary')}
-              className={
-                "flex items-center space-x-2 px-6 py-2 rounded-xl transition-all text-sm font-medium whitespace-nowrap " +
-                (activeTab === 'anniversary' ? 'bg-pink-500 text-white shadow-lg' : 'text-gray-400 hover:text-white')
-              }
-            >
-              <Gift className="w-4 h-4" />
-              <span>紀念日</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('countdown')}
-              className={
-                "flex items-center space-x-2 px-6 py-2 rounded-xl transition-all text-sm font-medium whitespace-nowrap " +
-                (activeTab === 'countdown' ? 'bg-sky-500 text-white shadow-lg' : 'text-gray-400 hover:text-white')
-              }
-            >
-              <Hourglass className="w-4 h-4" />
-              <span>倒數日</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {displayProfiles.map(profile => {
-              let details = null;
-              let isFuture = false;
-              let isToday = false;
-
-              if (profile.type === 'countdown') {
-                details = calculateCountdown(profile.date, profile.time);
-                if (details.status === 'future') isFuture = true;
-                if (details.status === 'today') isToday = true;
-              } else {
-                details = calculateDetails(profile.date, profile.time);
-              }
-
-              if (!details && profile.type !== 'countdown') return null;
-              const isCountdownPast = profile.type === 'countdown' && details.status === 'past';
-
-              return (
-                <div
-                  key={profile.id}
-                  onClick={() => openDetail(profile)}
-                  className={
-                    "group relative bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-6 transition-all overflow-hidden " +
-                    (isDeleteMode ? 'border-red-500/30 bg-red-500/5 cursor-default' : 'hover:border-indigo-500/30 cursor-pointer')
-                  }
-                >
-                  {isDeleteMode && (
-                    <div className="absolute bottom-3 right-3 z-30 animate-fade-in-up">
-                      <button
-                        onClick={e => requestDelete(e, profile.id)}
-                        className="flex items-center justify-center w-8 h-8 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 hover:scale-110 transition-all"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-xl font-bold text-white group-hover:text-indigo-200 transition-colors">
-                          {profile.name}
-                        </h3>
-                        {profile.type === 'countdown' ? (
-                          isToday ? (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-[10px] text-amber-300 border border-amber-500/30 font-bold animate-pulse">
-                              節日結束倒計時
-                            </span>
-                          ) : isFuture ? (
-                            <span className="px-2 py-0.5 rounded-full bg-sky-500/20 text-[10px] text-sky-300 border border-sky-500/30">
-                              即將到來
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-gray-500/20 text-[10px] text-gray-400 border border-gray-500/30">
-                              已結束
-                            </span>
-                          )
-                        ) : (
-                          profile.relation && (
-                            <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px] text-gray-300 border border-white/10">
-                              {profile.relation}
-                            </span>
-                          )
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 flex items-center gap-2">
-                        <span>{profile.date}</span>
-                        {isLoaded && profile.type === 'life' && (
-                          <span className="text-indigo-300/70 bg-indigo-500/10 px-1.5 rounded text-[10px]">
-                            農 {getLunarString(profile.date)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {!isDeleteMode && (
-                      <ChevronRight className="w-5 h-5 text-gray-600 group-hover:translate-x-1 transition-transform" />
-                    )}
-                  </div>
-
-                  <div className="flex items-baseline space-x-2">
-                    {isCountdownPast ? (
-                      <span className="text-xl font-mono text-gray-500">日子已過</span>
-                    ) : isToday ? (
-                      <>
-                        <span className="text-3xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-300">
-                          {details.hours.toString().padStart(2, '0')}:
-                          {details.minutes.toString().padStart(2, '0')}:
-                          {details.seconds.toString().padStart(2, '0')}
-                        </span>
-                        <span className="text-xs text-gray-400 uppercase tracking-wider">剩餘</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className={
-                          "text-3xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r " +
-                          (profile.type === 'countdown' ? 'from-sky-300 to-blue-300' : 'from-indigo-300 to-purple-300')
-                        }>
-                          {details.years > 0 ? details.years : details.days}
-                        </span>
-                        <span className="text-xs text-gray-400 uppercase tracking-wider">
-                          {details.years > 0 ? '年' : '天'}
-                        </span>
-                        {details.years > 0 && (
-                          <>
-                            <span className={
-                              "text-3xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r " +
-                              (profile.type === 'countdown' ? 'from-sky-300 to-blue-300' : 'from-indigo-300 to-purple-300') +
-                              " ml-2"
-                            }>
-                              {details.days}
-                            </span>
-                            <span className="text-xs text-gray-400 uppercase tracking-wider">天</span>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {!isDeleteMode && (
-              <button
-                onClick={() => {
-                  setFormData({ name: '', relation: '', date: '', time: '00:00', type: activeTab });
-                  setView('form');
-                }}
-                className="flex flex-col items-center justify-center h-[180px] rounded-2xl border-2 border-dashed border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group"
-              >
-                <div className="p-4 rounded-full bg-white/5 group-hover:scale-110 transition-transform mb-3">
-                  <Plus className="w-6 h-6 text-gray-400 group-hover:text-indigo-400" />
-                </div>
-                <span className="text-sm text-gray-400 font-medium group-hover:text-indigo-300">
-                  新增{activeTab === 'life' ? '時光足跡' : activeTab === 'anniversary' ? '紀念日' : '倒數日'}
-                </span>
-              </button>
-            )}
-          </div>
-
-          {displayProfiles.length > 0 && (
-            <div className="fixed bottom-6 left-6 z-50">
-              <button
-                onClick={() => setIsDeleteMode(!isDeleteMode)}
-                className={
-                  "flex items-center justify-center w-12 h-12 rounded-full shadow-2xl backdrop-blur-md border border-white/10 transition-all duration-300 " +
-                  (isDeleteMode
-                    ? 'bg-white text-red-500 rotate-180'
-                    : 'bg-black/40 text-gray-400 hover:text-white hover:bg-black/60')
-                }
-                title={isDeleteMode ? "完成編輯" : "編輯/刪除"}
-              >
-                {isDeleteMode ? <Check className="w-6 h-6" /> : <Edit2 className="w-5 h-5" />}
-              </button>
-            </div>
+      >
+        <div className="absolute bottom-2 right-2 w-36 h-36 opacity-20 animate-heartbeat">
+          {profile.type === "countdown" ? (
+            <Hourglass className="w-full h-full" />
+          ) : (
+            <Heart className="w-full h-full fill-pink-500 text-pink-500" />
           )}
         </div>
-      );
 
-      return (
-        <div className="min-h-screen text-white overflow-hidden selection:bg-indigo-500 selection:text-white pb-20">
-          <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-900/10 rounded-full blur-[120px]"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-900/10 rounded-full blur-[120px]"></div>
-          </div>
-
-          <div className="container mx-auto px-4 py-8 md:py-16 max-w-5xl">
-            {view === 'dashboard' && (
-              <header className="flex flex-col items-center mb-12 text-center animate-fade-in-down">
-                <div className="p-3 bg-white/5 rounded-full mb-4 ring-1 ring-white/20">
-                  <Clock className="w-8 h-8 text-indigo-400" />
-                </div>
-                <h1 className="text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-200 to-purple-200 mb-2">
-                  時光旅程
-                </h1>
-                <p className="text-gray-400 max-w-xl text-sm md:text-base">
-                  紀錄每一個重要的人，與每一個值得紀念的瞬間。
-                </p>
-              </header>
-            )}
-
-            {view === 'dashboard' && renderDashboard()}
-            {view === 'form' && renderForm()}
-            {view === 'detail' && selectedProfile && (
-              <DetailTimer profile={selectedProfile} onBack={() => setView('dashboard')} isLoaded={isLoaded} />
-            )}
-          </div>
+        <h3 className="text-sm text-gray-400">在這個星球上的總秒數</h3>
+        <div className="text-4xl md:text-5xl font-mono font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 to-teal-300">
+          {stats.totalSeconds.toLocaleString()}
+          <span className="text-base text-gray-400 ml-2">秒</span>
         </div>
-      );
-    };
+        <p className="text-xs text-gray-500 mt-4">每一秒都是生命的禮物。</p>
+      </div>
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<LifeJourney />);
-  </script>
+      {/* 里程碑 */}
+      <div className="space-y-4">
+        <MilestoneRow
+          label="總天數"
+          value={Math.floor(stats.totalSeconds / 86400).toLocaleString()}
+          unit="天"
+        />
+        <MilestoneRow
+          label="總週數"
+          value={Math.floor(stats.totalSeconds / (86400 * 7)).toLocaleString()}
+          unit="週"
+        />
+        <MilestoneRow
+          label="總小時"
+          value={Math.floor(stats.totalSeconds / 3600).toLocaleString()}
+          unit="小時"
+        />
+      </div>
+    </div>
+  );
+};
+
+/* -----------------------------------------
+   ⭐ 主程式 LifeJourney（完整可執行）
+----------------------------------------- */
+const LifeJourney = () => {
+  useLucide();
+  const isLoaded = useLunar();
+
+  const [view, setView] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("life");
+  const [profiles, setProfiles] = useState(() => {
+    const saved = localStorage.getItem("lifeJourneyProfiles");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [selectedProfileId, setSelectedProfileId] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    relation: "",
+    date: "",
+    time: "00:00",
+    type: "life",
+  });
+
+  useEffect(() => {
+    localStorage.setItem("lifeJourneyProfiles", JSON.stringify(profiles));
+  }, [profiles]);
+
+  const addProfile = () => {
+    if (!formData.name || !formData.date) return;
+    setProfiles([
+      ...profiles,
+      {
+        id: Date.now().toString(),
+        ...formData,
+      },
+    ]);
+    setView("dashboard");
+  };
+
+  const openDetail = (p) => {
+    setSelectedProfileId(p.id);
+    setView("detail");
+  };
+
+  const selectedProfile = profiles.find((p) => p.id === selectedProfileId);
+
+  /* -----------------------------------------
+       Dashboard
+  ----------------------------------------- */
+  const Dashboard = () => (
+    <div className="animate-fade-in">
+      <ConfirmModal
+        isOpen={!!deleteTargetId}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={() => {
+          setProfiles((prev) => prev.filter((p) => p.id !== deleteTargetId));
+          setDeleteTargetId(null);
+        }}
+        title="刪除確認"
+        message="刪除後將無法復原。"
+      />
+
+      {/* Tabs */}
+      <div className="flex p-1 bg-white/5 rounded-2xl mb-6 w-fit mx-auto">
+        {[
+          ["life", <User className="w-4 h-4" />, "時光足跡"],
+          ["anniversary", <Gift className="w-4 h-4" />, "紀念日"],
+          ["countdown", <Hourglass className="w-4 h-4" />, "倒數日"],
+        ].map(([type, icon, text]) => (
+          <button
+            key={type}
+            onClick={() => setActiveTab(type)}
+            className={
+              "flex items-center gap-2 px-6 py-2 rounded-xl transition-all " +
+              (activeTab === type
+                ? "bg-indigo-500 text-white shadow-lg"
+                : "text-gray-400 hover:text-white")
+            }
+          >
+            {icon}
+            {text}
+          </button>
+        ))}
+      </div>
+
+      {/* Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {profiles
+          .filter((p) => p.type === activeTab)
+          .map((p) => {
+            const stats =
+              p.type === "countdown"
+                ? calculateCountdown(p.date, p.time)
+                : calculateDetails(p.date, p.time);
+
+            return (
+              <div
+                key={p.id}
+                onClick={() => openDetail(p)}
+                className="group bg-white/5 p-6 rounded-2xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold group-hover:text-indigo-200 transition-colors">
+                      {p.name}
+                    </h3>
+
+                    <div className="text-xs text-gray-400 flex gap-2">
+                      <span>{p.date}</span>
+                      {isLoaded && p.type === "life" && (
+                        <span className="text-indigo-300">
+                          農 {getLunarString(p.date)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <ChevronRight className="w-5 h-5 text-gray-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+
+                <div className="text-3xl font-mono text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">
+                  {stats?.years ?? "--"}
+                </div>
+                <div className="text-xs text-gray-400 mt-1">年齡 / 經過時間</div>
+              </div>
+            );
+          })}
+
+        {/* New card */}
+        <button
+          onClick={() => {
+            setFormData({ name: "", relation: "", date: "", time: "00:00", type: activeTab });
+            setView("form");
+          }}
+          className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-2xl hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all"
+        >
+          <Plus className="w-8 h-8 text-gray-400" />
+          <span className="text-sm text-gray-400 mt-2">新增</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  /* -----------------------------------------
+       表單
+  ----------------------------------------- */
+  const FormView = () => (
+    <div className="max-w-md mx-auto bg-white/5 p-8 rounded-3xl border border-white/10 shadow-xl animate-fade-in-up">
+      <h2 className="text-lg font-bold mb-6">新增紀錄</h2>
+
+      <div className="space-y-4">
+        <input
+          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl"
+          placeholder="名稱"
+          value={formData.name}
+          onChange={(e) =>
+            setFormData({ ...formData, name: e.target.value })
+          }
+        />
+
+        <input
+          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl"
+          placeholder="描述 / 關係"
+          value={formData.relation}
+          onChange={(e) =>
+            setFormData({ ...formData, relation: e.target.value })
+          }
+        />
+
+        <input
+          type="date"
+          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl"
+          value={formData.date}
+          onChange={(e) =>
+            setFormData({ ...formData, date: e.target.value })
+          }
+        />
+
+        <input
+          type="time"
+          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl"
+          value={formData.time}
+          onChange={(e) =>
+            setFormData({ ...formData, time: e.target.value })
+          }
+        />
+
+        <div className="flex gap-3 pt-4">
+          <button
+            onClick={() => setView("dashboard")}
+            className="flex-1 bg-white/10 py-3 rounded-xl hover:bg-white/20"
+          >
+            返回
+          </button>
+
+          <button
+            onClick={addProfile}
+            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 py-3 rounded-xl font-bold"
+          >
+            儲存
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* -----------------------------------------
+       主畫面渲染
+  ----------------------------------------- */
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
+      {view === "dashboard" && <Dashboard />}
+      {view === "form" && <FormView />}
+      {view === "detail" && selectedProfile && (
+        <DetailTimer
+          profile={selectedProfile}
+          onBack={() => setView("dashboard")}
+          isLoaded={isLoaded}
+        />
+      )}
+    </div>
+  );
+};
+
+/* -----------------------------------------
+   React 渲染
+----------------------------------------- */
+ReactDOM.createRoot(document.getElementById("root")).render(<LifeJourney />);
+
+</script>
 </body>
 </html>
