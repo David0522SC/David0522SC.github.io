@@ -1,0 +1,73 @@
+import argparse
+import random
+import time
+from pytrends.request import TrendReq
+import pandas as pd
+
+def get_trending_keywords(region='TW', count=5):
+    """
+    從 Google Trends 獲取即時熱門關鍵字並隨機選取。
+    
+    Args:
+        region (str): 地區代碼 (例如 'TW', 'US', 'JP'). 預設為台灣 'TW'.
+        count (int): 要生成的隨機關鍵字數量.
+        
+    Returns:
+        list: 隨機選取的熱門關鍵字列表.
+    """
+    print(f"正在連線至 Google Trends 獲取 [{region}] 地區的熱搜趨勢...")
+    
+    # 初始化 pytrends
+    # hl: 語言 (host language), tz: 時區 (timezone offset)
+    pytrends = TrendReq(hl='zh-TW', tz=-480)
+    
+    try:
+        # 獲取即時熱搜趨勢 (Realtime Trending Searches)
+        # pn 是地區代碼
+        trending_df = pytrends.realtime_trending_searches(pn=region)
+        
+        # 檢查是否成功獲取資料
+        if trending_df.empty:
+            print("警告: 未能獲取到任何熱搜資料，可能是 API 限制或地區不支援。")
+            return []
+            
+        # 將 DataFrame 轉換為列表 (取第一欄 'entityNames')
+        # title 欄位通常包含最熱門的關鍵字
+        keywords_pool = trending_df['title'].tolist()
+        
+        print(f"成功獲取 {len(keywords_pool)} 個當前熱門話題。")
+        
+        # 確保請求數量不超過總數
+        select_count = min(count, len(keywords_pool))
+        
+        # 隨機選取
+        random_keywords = random.sample(keywords_pool, select_count)
+        
+        return random_keywords
+
+    except Exception as e:
+        print(f"發生錯誤: {e}")
+        print("提示: 如果頻繁出現 429 錯誤，表示 Google 暫時限制了您的 IP 請求。請稍後再試。")
+        return []
+
+def main():
+    # 設定命令行參數，讓使用者可以自訂
+    parser = argparse.ArgumentParser(description='根據現行網路熱搜隨機生成熱門關鍵字')
+    parser.add_argument('--region', type=str, default='TW', help='地區代碼 (例如: TW, US, JP, KR)')
+    parser.add_argument('--count', type=int, default=5, help='要生成的關鍵字數量')
+    
+    args = parser.parse_args()
+    
+    # 執行主邏輯
+    results = get_trending_keywords(args.region, args.count)
+    
+    if results:
+        print("\n=== 隨機生成的熱門關鍵字 ===")
+        for idx, keyword in enumerate(results, 1):
+            print(f"{idx}. {keyword}")
+        print("============================")
+    else:
+        print("無法生成關鍵字。")
+
+if __name__ == "__main__":
+    main()
