@@ -3,31 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>隨機熱搜關鍵字生成器</title>
-    <!-- 使用 Tailwind CSS 進行快速排版 -->
+    <title>無限熱搜關鍵字生成器</title>
+    <!-- Tailwind CSS (快速排版) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-        }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+    <!-- 自訂樣式 -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
 
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
         <!-- Header -->
         <div class="bg-blue-600 p-6 text-white text-center">
-            <h1 class="text-2xl font-bold mb-2">🔥 熱搜關鍵字產生器</h1>
-            <p class="text-blue-100 text-sm">資料來源：Google Trends (台灣)</p>
+            <h1 class="text-2xl font-bold mb-2">🔥 無限熱搜生成器</h1>
+            <p class="text-blue-100 text-sm">運用組合演算法，可生成超過百萬種變化</p>
         </div>
 
         <!-- Controls -->
@@ -35,13 +25,15 @@
             <div class="flex items-center justify-between mb-4">
                 <label class="text-gray-700 font-medium">生成數量:</label>
                 <select id="countSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2">
-                    <option value="3">3 個</option>
-                    <option value="5" selected>5 個</option>
-                    <option value="10">10 個</option>
+                    <option value="5">5 個</option>
+                    <option value="10" selected>10 個</option>
+                    <option value="20">20 個</option>
+                    <option value="50">50 個</option>
+                    <option value="100">100 個 (量大)</option>
                 </select>
             </div>
             
-            <button id="generateBtn" onclick="fetchAndGenerate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:transform active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -50,147 +42,41 @@
         </div>
 
         <!-- Results Area -->
-        <div class="p-6 bg-gray-50 min-h-[300px]">
-            <div id="loading" class="hidden flex flex-col items-center justify-center h-48 text-gray-500">
-                <svg class="animate-spin h-8 w-8 text-blue-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p>正在抓取 Google 趨勢...</p>
+        <div class="p-6 bg-gray-50 min-h-[300px] flex flex-col">
+            
+            <div id="instruction" class="text-xs text-gray-500 text-center mb-3 hidden">
+                💡 點擊單個項目即可複製
             </div>
 
-            <div id="errorMsg" class="hidden text-center text-red-500 p-4 bg-red-50 rounded-lg border border-red-200">
-                <p>無法獲取資料，請稍後再試。</p>
-            </div>
-
-            <div id="resultList" class="space-y-3">
-                <!-- Keywords will go here -->
-                <div class="text-center text-gray-400 py-10">
-                    點擊按鈕開始生成
+            <div id="resultList" class="space-y-3 flex-grow overflow-y-auto max-h-[500px] pr-2 scrollbar-thin scrollbar-thumb-gray-300">
+                <!-- 初始提示 -->
+                <div class="text-center text-gray-400 py-10 flex flex-col items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <span>點擊按鈕開始無限生成</span>
+                    <span id="dataStatus" class="text-xs text-gray-300 mt-2">資料載入中...</span>
                 </div>
             </div>
             
-            <button id="copyBtn" onclick="copyToClipboard()" class="hidden w-full mt-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition duration-200 text-sm">
-                複製全部關鍵字
+            <button id="copyBtn" class="hidden w-full mt-6 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition duration-200 text-sm shadow-sm">
+                複製全部列表
             </button>
         </div>
         
         <!-- Footer -->
         <div class="bg-gray-100 p-3 text-center text-xs text-gray-400">
-            Powered by Google Trends RSS
+            Infinite Keyword Generator
         </div>
     </div>
 
-    <script>
-        // RSS to JSON 轉換 API (因為瀏覽器不能直接讀取 Google RSS，會有跨域問題)
-        // 使用 api.rss2json.com 免費服務
-        const GOOGLE_TRENDS_RSS = 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=TW';
-        const API_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(GOOGLE_TRENDS_RSS)}`;
+    <!-- 複製提示 Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+        已複製到剪貼簿
+    </div>
 
-        let currentKeywords = [];
-
-        async function fetchAndGenerate() {
-            const loading = document.getElementById('loading');
-            const resultList = document.getElementById('resultList');
-            const errorMsg = document.getElementById('errorMsg');
-            const copyBtn = document.getElementById('copyBtn');
-            const count = parseInt(document.getElementById('countSelect').value);
-
-            // UI Reset
-            loading.classList.remove('hidden');
-            resultList.innerHTML = '';
-            errorMsg.classList.add('hidden');
-            copyBtn.classList.add('hidden');
-
-            try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
-
-                if (data.status !== 'ok') {
-                    throw new Error('API Error');
-                }
-
-                // 提取關鍵字 (從 RSS items 中)
-                const allItems = data.items.map(item => item.title);
-                
-                // 隨機選取
-                const selected = getRandomSubarray(allItems, count);
-                currentKeywords = selected;
-
-                renderResults(selected);
-                copyBtn.classList.remove('hidden');
-
-            } catch (error) {
-                console.error(error);
-                errorMsg.classList.remove('hidden');
-                resultList.innerHTML = '';
-            } finally {
-                loading.classList.add('hidden');
-            }
-        }
-
-        function getRandomSubarray(arr, size) {
-            const shuffled = [...arr].sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, Math.min(size, arr.length));
-        }
-
-        function renderResults(keywords) {
-            const container = document.getElementById('resultList');
-            container.innerHTML = '';
-
-            keywords.forEach((keyword, index) => {
-                const div = document.createElement('div');
-                div.className = 'fade-in bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-300 transition-colors cursor-default';
-                div.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold">
-                            ${index + 1}
-                        </span>
-                        <span class="font-medium text-gray-800 text-lg">${keyword}</span>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function copyToClipboard() {
-            if (currentKeywords.length === 0) return;
-            
-            const textToCopy = currentKeywords.join('\n');
-            
-            // 使用較新的 Clipboard API
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    showToast();
-                });
-            } else {
-                // Fallback
-                const textArea = document.createElement("textarea");
-                textArea.value = textToCopy;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    showToast();
-                } catch (err) {
-                    console.error('Copy failed', err);
-                }
-                document.body.removeChild(textArea);
-            }
-        }
-
-        function showToast() {
-            const btn = document.getElementById('copyBtn');
-            const originalText = btn.innerText;
-            
-            btn.innerText = "已複製！";
-            btn.classList.add('bg-green-50', 'text-green-600', 'border-green-200');
-            
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.classList.remove('bg-green-50', 'text-green-600', 'border-green-200');
-            }, 2000);
-        }
-    </script>
+    <!-- 載入腳本：先載入資料，再載入邏輯 -->
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
