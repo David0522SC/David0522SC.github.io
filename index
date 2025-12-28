@@ -1,0 +1,208 @@
++<!DOCTYPE html>
++<html lang="zh-Hant">
++<head>
++  <meta charset="UTF-8" />
++  <title>熱搜關鍵字隨機生成器</title>
++  <meta name="viewport" content="width=device-width, initial-scale=1" />
++  <script src="https://cdn.tailwindcss.com"></script>
++  <style>
++    body {
++      background: #0f172a;
++      color: #f8fafc;
++    }
++  </style>
++</head>
++<body class="min-h-screen">
++  <div id="root"></div>
++
++  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
++  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
++  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
++
++  <script type="text/babel">
++    const { useEffect, useMemo, useState } = React;
++
++    const REGIONS = [
++      { label: "台灣", value: "TW" },
++      { label: "日本", value: "JP" },
++      { label: "美國", value: "US" },
++      { label: "香港", value: "HK" }
++    ];
++
++    const FALLBACK_TRENDS = [
++      "天氣", "股票", "遊戲", "演唱會", "旅遊", "電影", "科技", "AI", "美食", "運動"
++    ];
++
++    const buildTrendsUrl = (region) =>
++      `https://trends.google.com/trends/api/dailytrends?hl=zh-Hant&geo=${region}&tz=-480`;
++
++    const proxyUrl = (url) =>
++      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
++
++    const App = () => {
++      const [region, setRegion] = useState("TW");
++      const [keywords, setKeywords] = useState([]);
++      const [pick, setPick] = useState("");
++      const [isLoading, setIsLoading] = useState(false);
++      const [error, setError] = useState("");
++      const [lastUpdated, setLastUpdated] = useState("");
++
++      const keywordCount = useMemo(() => keywords.length, [keywords]);
++
++      const parseTrends = (rawText) => {
++        const cleaned = rawText.replace(/^\)\]\}',?\n/, "");
++        const data = JSON.parse(cleaned);
++        const days = data?.default?.trendingSearchesDays ?? [];
++        const trends = days.flatMap((day) =>
++          (day.trendingSearches || []).map((item) => item.title?.query).filter(Boolean)
++        );
++        return trends;
++      };
++
++      const loadTrends = async () => {
++        setIsLoading(true);
++        setError("");
++        try {
++          const response = await fetch(proxyUrl(buildTrendsUrl(region)));
++          if (!response.ok) {
++            throw new Error("無法取得熱搜資料");
++          }
++          const text = await response.text();
++          const trends = parseTrends(text);
++          if (!trends.length) {
++            throw new Error("目前沒有可用的熱搜資料");
++          }
++          setKeywords(trends);
++          setPick("");
++          setLastUpdated(new Date().toLocaleString("zh-Hant"));
++        } catch (err) {
++          setError(err.message || "載入失敗，請稍後再試");
++          setKeywords(FALLBACK_TRENDS);
++        } finally {
++          setIsLoading(false);
++        }
++      };
++
++      const pickRandom = () => {
++        if (!keywords.length) return;
++        const next = keywords[Math.floor(Math.random() * keywords.length)];
++        setPick(next);
++      };
++
++      useEffect(() => {
++        loadTrends();
++      }, [region]);
++
++      return (
++        <div className="min-h-screen px-4 py-10">
++          <div className="max-w-4xl mx-auto space-y-8">
++            <header className="text-center space-y-4">
++              <h1 className="text-3xl md:text-4xl font-bold text-white">
++                熱搜關鍵字隨機生成器
++              </h1>
++              <p className="text-slate-300 text-sm md:text-base">
++                根據最新 Google Trends 熱搜清單，快速抽出靈感關鍵字。
++              </p>
++            </header>
++
++            <section className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-6 shadow-xl">
++              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
++                <div className="space-y-2">
++                  <p className="text-slate-300 text-sm">選擇地區</p>
++                  <div className="flex flex-wrap gap-2">
++                    {REGIONS.map((item) => (
++                      <button
++                        key={item.value}
++                        onClick={() => setRegion(item.value)}
++                        className={
++                          "px-4 py-2 rounded-full border text-sm transition-all " +
++                          (region === item.value
++                            ? "bg-indigo-500 border-indigo-400 text-white"
++                            : "border-white/10 text-slate-300 hover:text-white hover:border-indigo-300")
++                        }
++                      >
++                        {item.label}
++                      </button>
++                    ))}
++                  </div>
++                </div>
++
++                <div className="flex flex-col items-start md:items-end gap-2">
++                  <p className="text-xs text-slate-400">
++                    {lastUpdated ? `最後更新：${lastUpdated}` : "尚未更新"}
++                  </p>
++                  <div className="flex gap-2">
++                    <button
++                      onClick={loadTrends}
++                      className="px-4 py-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all text-sm"
++                    >
++                      重新載入
++                    </button>
++                    <button
++                      onClick={pickRandom}
++                      className="px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold hover:from-indigo-400 hover:to-purple-400 transition-all"
++                    >
++                      隨機抽取
++                    </button>
++                  </div>
++                </div>
++              </div>
++
++              <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
++                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-2">本次抽到</p>
++                <div className="min-h-[56px] flex items-center">
++                  {pick ? (
++                    <h2 className="text-2xl md:text-3xl font-bold text-indigo-200">{pick}</h2>
++                  ) : (
++                    <p className="text-slate-400">點擊「隨機抽取」獲得熱門關鍵字。</p>
++                  )}
++                </div>
++              </div>
++
++              {isLoading ? (
++                <p className="text-slate-400 text-sm">載入熱搜資料中...</p>
++              ) : error ? (
++                <p className="text-amber-300 text-sm">{error}</p>
++              ) : (
++                <p className="text-slate-400 text-sm">共取得 {keywordCount} 個熱搜關鍵字</p>
++              )}
++            </section>
++
++            <section className="grid md:grid-cols-2 gap-4">
++              <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
++                <h3 className="text-lg font-semibold mb-3">熱搜清單</h3>
++                <ul className="grid grid-cols-2 gap-2 text-sm text-slate-300">
++                  {keywords.slice(0, 20).map((word) => (
++                    <li
++                      key={word}
++                      className="rounded-lg bg-white/5 border border-white/10 px-3 py-2"
++                    >
++                      {word}
++                    </li>
++                  ))}
++                </ul>
++              </div>
++              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
++                <h3 className="text-lg font-semibold">使用說明</h3>
++                <ol className="list-decimal list-inside text-sm text-slate-300 space-y-2">
++                  <li>選擇想要查看的地區。</li>
++                  <li>按下「重新載入」取得最新熱搜。</li>
++                  <li>點擊「隨機抽取」生成靈感關鍵字。</li>
++                </ol>
++                <p className="text-xs text-slate-500">
++                  提醒：Google Trends 會依時間更新，若無法讀取會暫用備援清單。
++                </p>
++              </div>
++            </section>
++          </div>
++        </div>
++      );
++    };
++
++    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
++  </script>
++</body>
++</html>
+ 
+EOF
+)
