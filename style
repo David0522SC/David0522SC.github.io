@@ -1,0 +1,64 @@
+body {
+    font-family: 'Noto Sans TC', sans-serif;
+}
+
+/* 動畫效果 */
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 點擊時的波紋效果 */
+.click-feedback {
+    animation: flashGreen 0.5s ease-out;
+}
+
+@keyframes flashGreen {
+    0% { background-color: #dcfce7; transform: scale(0.98); }
+    50% { background-color: #dcfce7; transform: scale(1.02); }
+    100% { background-color: white; transform: scale(1); }
+}
+
+/* 關鍵字項目樣式 */
+.keyword-item {
+    background-color: white;
+    padding: 0.75rem; /* p-3 */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+    border: 1px solid #e5e7eb; /* border-gray-200 */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+    cursor: pointer;
+    user-select: none;
+}
+
+.keyword-item:hover {
+    border-color: #60a5fa; /* hover:border-blue-400 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* hover:shadow-md */
+}
+
+.keyword-item:active {
+    background-color: #eff6ff; /* active:bg-blue-50 */
+}
+
+/* 序號徽章 */
+.index-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem; /* w-6 */
+    height: 1.5rem; /* h-6 */
+    border-radius: 9999px; /* rounded-full */
+    background-color: #dbeafe; /* bg-blue-100 */
+    color: #2563eb; /* text-blue-600 */
+    font-size: 0.75rem; /* text-xs */
+    font-weight: 700; /* font-bold */
+}
