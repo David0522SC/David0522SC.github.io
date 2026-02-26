@@ -1,7 +1,1 @@
-Random Trending Keywords Generator (隨機熱搜關鍵字生成器)這是一個簡單的 Python 工具，能夠從 Google Trends (Google 搜尋趨勢) 抓取目前的即時熱搜話題，並從中隨機挑選關鍵字。適合用於：內容創作者尋找靈感隨機寫作題目生成測試資料填充查看當前流行趨勢功能🚀 即時數據：直接連接 Google Trends 獲取當下正在發生的熱門搜尋。🌍 多國支援：可切換台灣 (TW)、美國 (US)、日本 (JP) 等不同地區。🎲 隨機挑選：從大量的熱搜池中隨機抽出指定數量的關鍵字。安裝方式Clone 專案git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-cd your-repo-name
-安裝依賴套件建議使用 Python 3.7 以上版本。pip install -r requirements.txt
-使用方法基本使用 (預設抓取台灣資料，5 個關鍵字)python main.py
-進階使用你可以透過參數指定地區和數量。範例：抓取美國 (US) 的 10 個熱門關鍵字python main.py --region US --count 10
-範例：抓取日本 (JP) 的 3 個熱門關鍵字python main.py --region JP --count 3
-常見問題Q: 出現 429 TooManyRequestsError 錯誤？ A: 這是因為 Google Trends 對非官方 API 有頻率限制。如果你在短時間內執行太多次，IP 會被暫時封鎖。請等待幾分鐘後再試，或更換 IP。授權MIT License
+royaldice
