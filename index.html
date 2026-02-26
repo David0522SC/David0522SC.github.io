@@ -119,16 +119,34 @@
 
         /* 歷史記錄小標籤樣式 */
         .history-tag {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 900;
             border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
         }
+
+        .pair-indicator {
+            position: absolute;
+            bottom: -6px;
+            font-size: 8px;
+            color: #fbbf24;
+            text-shadow: 0 0 4px rgba(0,0,0,1);
+        }
+
+        .pair-glow {
+            box-shadow: 0 0 10px #fbbf24;
+            border: 2px solid #fbbf24 !important;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="flex flex-col items-center min-h-screen p-4 pb-10">
@@ -182,11 +200,11 @@
     </div>
 
     <!-- 歷史紀錄欄位 -->
-    <div class="w-full max-w-md mb-2 px-2 flex items-center gap-3 overflow-x-auto no-scrollbar">
-        <span class="text-[9px] font-black text-white/30 uppercase tracking-widest whitespace-nowrap">History:</span>
-        <div id="history-container" class="flex gap-2">
+    <div class="w-full max-w-md mb-2 px-2 flex items-center gap-3 overflow-x-auto no-scrollbar py-2">
+        <span class="text-[9px] font-black text-white/30 uppercase tracking-widest whitespace-nowrap">Trends:</span>
+        <div id="history-container" class="flex gap-4 items-center">
             <!-- 歷史點數會顯示在這裡 -->
-            <span class="text-[9px] text-white/20 italic">No data yet</span>
+            <span class="text-[9px] text-white/20 italic">No history data</span>
         </div>
     </div>
 
@@ -271,7 +289,7 @@
         let bets = { small: 0, large: 0, draw: 0 };
         let diceValues = [1, 1];
         let gameState = 'IDLE';
-        let history = []; // 儲存歷史記錄
+        let history = []; // 儲存歷史記錄，格式：{ sum, type, isPair }
 
         const chipColors = { 10: 'bg-blue-600', 50: 'bg-red-600', 100: 'bg-gray-800', 500: 'bg-purple-700' };
 
@@ -279,7 +297,7 @@
             document.getElementById('summary-modal').style.display = 'none';
             document.getElementById('init-modal').style.display = 'flex';
             bets = { small: 0, large: 0, draw: 0 };
-            history = []; // 清空歷史
+            history = []; 
             updateHistoryUI();
             document.querySelectorAll('.chip-stack').forEach(s => s.innerHTML = '');
             document.getElementById('cup').style.transform = 'translateY(0)';
@@ -368,7 +386,7 @@
             }
 
             // 更新歷史紀錄
-            addHistory(sum);
+            addHistory(sum, isPair);
 
             document.getElementById('status-display').textContent = `點數: ${sum}` + (isPair ? " [對子]" : "");
             gameState = 'REVEALED';
@@ -383,21 +401,21 @@
             }
         }
 
-        function addHistory(sum) {
+        function addHistory(sum, isPair) {
             let type = '';
             if (sum >= 2 && sum <= 6) type = 'S';
             else if (sum >= 8 && sum <= 12) type = 'L';
             else type = 'D';
 
-            history.unshift({ sum, type }); // 加在最前面
-            if (history.length > 5) history.pop(); // 只留最近 5 筆
+            history.unshift({ sum, type, isPair });
+            if (history.length > 5) history.pop();
             updateHistoryUI();
         }
 
         function updateHistoryUI() {
             const container = document.getElementById('history-container');
             if (history.length === 0) {
-                container.innerHTML = '<span class="text-[9px] text-white/20 italic">No data yet</span>';
+                container.innerHTML = '<span class="text-[9px] text-white/20 italic">No history data</span>';
                 return;
             }
 
@@ -407,7 +425,14 @@
                 else if (h.type === 'L') colorClass = 'bg-red-600/80';
                 else colorClass = 'bg-green-600/80';
                 
-                return `<div class="history-tag ${colorClass}">${h.sum}</div>`;
+                const pairClass = h.isPair ? 'pair-glow' : '';
+                const pairMarker = h.isPair ? '<span class="pair-indicator">⚀⚀</span>' : '';
+                
+                return `
+                <div class="history-tag ${colorClass} ${pairClass}">
+                    ${h.sum}
+                    ${pairMarker}
+                </div>`;
             }).join('');
         }
 
