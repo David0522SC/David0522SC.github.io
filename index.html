@@ -1,361 +1,514 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無限熱搜關鍵字生成器 + AI</title>
-    <!-- Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>頂級皇家骰子館</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Markdown 解析器 (用於 AI 回應) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
     <style>
-        /* === 樣式區 === */
-        body { font-family: 'Noto Sans TC', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #052e16;
+            color: white;
+            overflow-x: hidden;
+            touch-action: manipulation;
         }
 
-        .click-feedback { animation: flashGreen 0.5s ease-out; }
-        @keyframes flashGreen {
-            0% { background-color: #dcfce7; }
-            100% { background-color: white; }
+        .casino-table {
+            background: radial-gradient(circle, #065f46 0%, #052e16 100%);
+            border: 10px solid #3f2305;
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.5);
         }
 
-        .keyword-item {
-            background-color: white;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            border: 1px solid #e5e7eb;
-            display: flex; align-items: center; justify-content: space-between;
+        .dice-container {
+            perspective: 600px;
+            display: inline-block;
+            margin: 8px;
+        }
+
+        .dice {
+            width: 45px;
+            height: 45px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .dice figure {
+            width: 45px;
+            height: 45px;
+            background: white;
+            position: absolute;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            background: #222;
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .dice .front  { transform: rotateY(0deg) translateZ(22.5px); }
+        .dice .back   { transform: rotateX(180deg) translateZ(22.5px); }
+        .dice .right  { transform: rotateY(90deg) translateZ(22.5px); }
+        .dice .left   { transform: rotateY(-90deg) translateZ(22.5px); }
+        .dice .top    { transform: rotateX(90deg) translateZ(22.5px); }
+        .dice .bottom { transform: rotateX(-90deg) translateZ(22.5px); }
+
+        .f1 .dot1 { background: #e11d48; width: 12px; height: 12px; }
+        .f2 .dot1 { top: 6px; left: 6px; } .f2 .dot2 { bottom: 6px; right: 6px; }
+        .f3 .dot1 { top: 6px; left: 6px; } .f3 .dot2 { top: 18px; left: 18px; } .f3 .dot3 { bottom: 6px; right: 6px; }
+        .f4 .dot1 { top: 6px; left: 6px; } .f4 .dot2 { top: 6px; right: 6px; } .f4 .dot3 { bottom: 6px; left: 6px; } .f4 .dot4 { bottom: 6px; right: 6px; }
+        .f5 .dot1 { top: 5px; left: 5px; } .f5 .dot2 { top: 5px; right: 5px; } .f5 .dot3 { top: 18px; left: 18px; } .f5 .dot4 { bottom: 5px; left: 5px; } .f5 .dot5 { bottom: 5px; right: 5px; }
+        .f6 .dot1 { top: 5px; left: 5px; } .f6 .dot2 { top: 5px; right: 5px; } .f6 .dot3 { top: 18px; left: 5px; } .f6 .dot4 { top: 18px; right: 5px; } .f6 .dot5 { bottom: 5px; left: 5px; } .f6 .dot6 { bottom: 5px; right: 5px; }
+
+        .shake-anim { animation: shake 0.4s infinite; }
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            25% { transform: translate(-6px, -3px) rotate(-3deg); }
+            50% { transform: translate(6px, 3px) rotate(3deg); }
+            75% { transform: translate(-3px, 6px) rotate(-1.5deg); }
+        }
+
+        .chip-visual {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255,255,255,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: 900;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.5);
+            margin-bottom: -28px;
+            position: relative;
+        }
+
+        .chip-stack {
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            min-height: 40px;
+            margin-bottom: 2px;
+            pointer-events: none;
+        }
+
+        .bet-option {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.05);
             transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 10px 0;
+            cursor: pointer;
         }
-        .keyword-item:hover {
-            border-color: #60a5fa;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+        
+        .bet-option:active { transform: scale(0.95); }
+        #summary-modal, #init-modal { backdrop-filter: blur(15px); }
 
-        .index-badge {
-            display: flex; align-items: center; justify-content: center;
-            width: 1.5rem; height: 1.5rem; border-radius: 9999px;
-            background-color: #f3f4f6; color: #6b7280;
-            font-size: 0.75rem; font-weight: 700;
-        }
-
-        .ai-btn {
-            opacity: 0; transform: scale(0.9); transition: all 0.2s;
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            font-weight: bold; display: flex; align-items: center; gap: 2px;
-        }
-        .keyword-item:hover .ai-btn { opacity: 1; transform: scale(1); }
-        .ai-btn:hover { filter: brightness(1.2); transform: scale(1.1); cursor: pointer; }
-
-        /* AI Markdown 樣式 */
-        .prose h1, .prose h2, .prose h3 { color: #1f2937; font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; }
-        .prose ul { list-style-type: disc; padding-left: 1.5em; }
-        .prose p { margin-bottom: 0.8em; }
-
-        .loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
-        @keyframes dots {
-            0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; }
+        /* 歷史記錄小標籤樣式 */
+        .history-tag {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 900;
+            border: 1px solid rgba(255,255,255,0.2);
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<body class="flex flex-col items-center min-h-screen p-4 pb-10">
 
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
-        
-        <!-- 設定按鈕 -->
-        <button id="settingsBtn" class="absolute top-4 right-4 text-white/80 hover:text-white transition-colors z-10" title="設定 API Key">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        </button>
-
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center">
-            <h1 class="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-                🔥 無限熱搜生成器 <span class="text-xs bg-white/20 px-2 py-1 rounded text-yellow-300">AI 版</span>
-            </h1>
-            <p class="text-blue-100 text-sm">運用組合演算法 + Gemini 生成文案</p>
-        </div>
-
-        <!-- Controls -->
-        <div class="p-6 border-b border-gray-100">
-            <div class="flex items-center justify-between mb-4">
-                <label class="text-gray-700 font-medium">生成數量:</label>
-                <select id="countSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2">
-                    <option value="5">5 個</option>
-                    <option value="10" selected>10 個</option>
-                    <option value="20">20 個</option>
-                </select>
+    <!-- 初始買入 Modal -->
+    <div id="init-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[100] p-6">
+        <div class="bg-gray-900 p-8 rounded-[2rem] shadow-2xl w-full max-w-sm text-center border border-yellow-500/30">
+            <h1 class="text-3xl font-black mb-1 text-yellow-500 tracking-tighter uppercase">Royal Dice</h1>
+            <p class="text-gray-500 mb-8 text-xs uppercase tracking-widest italic">Experience the Luxury</p>
+            <div class="mb-8 text-left">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">兌換入場籌碼</label>
+                <input type="number" id="init-balance-input" value="1000" class="w-full p-4 rounded-2xl bg-black text-white text-center text-3xl font-black outline-none border border-white/10 focus:border-yellow-500 transition">
             </div>
-            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:transform active:scale-95">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                立即生成
-            </button>
+            <button onclick="startGame()" class="w-full py-5 bg-yellow-600 hover:bg-yellow-500 text-yellow-950 rounded-2xl font-black text-xl shadow-xl transition transform active:scale-95">兌換並入場</button>
         </div>
+    </div>
 
-        <!-- Results Area -->
-        <div class="p-6 bg-gray-50 min-h-[300px] flex flex-col relative">
-            <div id="instruction" class="text-xs text-gray-500 text-center mb-3 hidden">
-                💡 點擊文字複製，點擊 ✨ 生成文案
-            </div>
-            <div id="resultList" class="space-y-3 flex-grow overflow-y-auto max-h-[500px] pr-2 scrollbar-thin scrollbar-thumb-gray-300">
-                <div class="text-center text-gray-400 py-10 flex flex-col items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <span>點擊按鈕開始生成</span>
-                    <!-- 狀態指示燈 -->
-                    <span id="dataStatus" class="text-xs text-gray-300 mt-2">資料載入中...</span>
+    <!-- 遊戲結算 Modal -->
+    <div id="summary-modal" class="fixed inset-0 bg-black bg-opacity-95 hidden items-center justify-center z-[200] p-6">
+        <div class="bg-gray-900 p-10 rounded-[3rem] w-full max-w-sm text-center border border-blue-500/30">
+            <h2 class="text-2xl font-black mb-8 text-blue-400 uppercase tracking-widest">離場結算單</h2>
+            <div class="space-y-5 mb-10 text-left bg-black/50 p-6 rounded-3xl">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-500">買入籌碼</span>
+                    <span id="sum-init" class="font-bold text-white"></span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-500">剩餘籌碼</span>
+                    <span id="sum-final" class="font-bold text-white"></span>
+                </div>
+                <div class="flex justify-between items-center font-black border-t border-white/10 pt-5 text-2xl">
+                    <span id="sum-label" class="text-blue-400">總盈虧</span>
+                    <span id="sum-profit"></span>
                 </div>
             </div>
-            <button id="copyBtn" class="hidden w-full mt-6 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition duration-200 text-sm shadow-sm">
-                複製全部列表
-            </button>
-        </div>
-        
-        <div class="bg-gray-100 p-3 text-center text-xs text-gray-400">Powered by Gemini API</div>
-    </div>
-
-    <!-- Toast & Modals -->
-    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm transition-opacity duration-300 opacity-0 pointer-events-none z-50">已複製到剪貼簿</div>
-
-    <div id="aiModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-blue-50 rounded-t-xl">
-                <h3 class="font-bold text-gray-800 flex items-center gap-2">✨ AI 文案靈感 <span id="aiModalKeyword" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"></span></h3>
-                <button onclick="closeAiModal()" class="text-gray-400 hover:text-gray-600"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
-            </div>
-            <div id="aiModalContent" class="p-6 overflow-y-auto prose prose-sm max-w-none text-gray-700"></div>
-            <div class="p-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50 rounded-b-xl">
-                <button onclick="copyAiContent()" class="text-blue-600 text-sm font-semibold hover:bg-blue-50 px-3 py-1.5 rounded transition">複製內容</button>
-                <button onclick="closeAiModal()" class="bg-gray-800 text-white text-sm font-semibold px-4 py-1.5 rounded hover:bg-gray-900 transition">關閉</button>
-            </div>
+            <button onclick="showInitModal()" class="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-xl transition transform active:scale-95">再次入場</button>
         </div>
     </div>
 
-    <div id="settingsModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
-            <h3 class="text-lg font-bold mb-4">設定 Gemini API Key</h3>
-            <p class="text-sm text-gray-500 mb-4">請輸入 Google Gemini API Key 以啟用 AI 功能。<a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-500 hover:underline">取得 Key</a></p>
-            <input type="password" id="apiKeyInput" placeholder="貼上 API Key (AIzaSy...)" class="w-full border border-gray-300 rounded-lg p-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-            <div class="flex justify-end gap-2">
-                <button onclick="closeSettingsModal()" class="text-gray-500 hover:bg-gray-100 px-4 py-2 rounded">取消</button>
-                <button onclick="saveApiKey()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">儲存</button>
-            </div>
+    <!-- 頂部狀態列 -->
+    <div class="w-full max-w-md flex justify-between items-center mb-4 px-6 py-4 bg-black/40 rounded-3xl border border-white/5 backdrop-blur-md">
+        <div class="flex flex-col">
+            <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">My Balance</span>
+            <span id="balance-display" class="text-xl font-black text-yellow-500 leading-tight">$0</span>
+        </div>
+        <button onclick="endGame()" class="px-4 py-2 bg-red-900/20 hover:bg-red-900/40 border border-red-500/20 rounded-xl text-[9px] font-black text-red-500 transition uppercase tracking-widest">結算退場</button>
+        <div class="flex flex-col items-end">
+            <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Total Wager</span>
+            <span id="total-bet-display" class="text-xl font-black text-white leading-tight">$0</span>
         </div>
     </div>
+
+    <!-- 歷史紀錄欄位 -->
+    <div class="w-full max-w-md mb-2 px-2 flex items-center gap-3 overflow-x-auto no-scrollbar">
+        <span class="text-[9px] font-black text-white/30 uppercase tracking-widest whitespace-nowrap">History:</span>
+        <div id="history-container" class="flex gap-2">
+            <!-- 歷史點數會顯示在這裡 -->
+            <span class="text-[9px] text-white/20 italic">No data yet</span>
+        </div>
+    </div>
+
+    <!-- 賭桌區域 -->
+    <div class="casino-table w-full max-w-xs aspect-square rounded-full relative flex flex-col items-center justify-center mb-6 pointer-events-none">
+        <div id="dices-area" class="flex opacity-0 transition-all duration-700 transform scale-50">
+            <div class="dice-container"><div id="dice1" class="dice">
+                <figure class="front f1"><div class="dot dot1"></div></figure>
+                <figure class="back f6"><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div><div class="dot dot4"></div><div class="dot dot5"></div><div class="dot dot6"></div></figure>
+                <figure class="right f3"><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div></figure>
+                <figure class="left f4"><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div><div class="dot dot4"></div></figure>
+                <figure class="top f2"><div class="dot dot1"></div><div class="dot dot2"></div></figure>
+                <figure class="bottom f5"><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div><div class="dot dot4"></div><div class="dot dot5"></div></figure>
+            </div></div>
+            <div class="dice-container"><div id="dice2" class="dice">
+                <figure class="front f1"><div class="dot dot1"></div></figure>
+                <figure class="back f6"><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div><div class="dot dot4"></div><div class="dot dot5"></div><div class="dot dot6"></div></figure>
+                <figure class="right f3"><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div></figure>
+                <figure class="left f4"><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div><div class="dot dot4"></div></figure>
+                <figure class="top f2"><div class="dot dot1"></div><div class="dot dot2"></div></figure>
+                <figure class="bottom f5"><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div><div class="dot dot4"></div><div class="dot dot5"></div></figure>
+            </div></div>
+        </div>
+        <div id="cup" class="absolute inset-0 flex items-center justify-center">
+            <svg width="140" height="140" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="cupGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#4a2c21" /><stop offset="50%" style="stop-color:#7d5142" /><stop offset="100%" style="stop-color:#331A12" />
+                    </linearGradient>
+                </defs>
+                <path d="M15 85 Q 50 95 85 85 L 75 25 Q 50 15 25 25 Z" fill="url(#cupGrad)" stroke="#22110b" stroke-width="1.5" />
+                <circle cx="50" cy="15" r="7" fill="#22110b" />
+            </svg>
+        </div>
+        <div id="status-display" class="absolute bottom-8 text-yellow-500/50 font-black text-[9px] tracking-[0.3em] uppercase">Ready</div>
+    </div>
+
+    <!-- 核心操作按鈕 -->
+    <div class="w-full max-w-md mb-8">
+        <button id="main-action-btn" onclick="handleMainAction()" class="w-full py-5 bg-gradient-to-b from-yellow-500 to-yellow-700 text-yellow-950 rounded-[2rem] font-black text-lg shadow-2xl transition transform active:scale-95 uppercase tracking-widest">
+            開始搖骰
+        </button>
+    </div>
+
+    <!-- 下注看板 -->
+    <div id="betting-board" class="w-full max-w-md grid grid-cols-2 gap-4 mb-8 opacity-40 pointer-events-none transition-all duration-500">
+        <button onclick="placeBet('small')" class="bet-option h-36 rounded-[2.5rem] border-b-4 border-blue-900 shadow-xl">
+            <div id="stack-small" class="chip-stack"></div>
+            <span class="text-blue-400 font-black text-2xl uppercase italic leading-none">Small</span>
+            <div id="val-small" class="mt-1 font-black text-yellow-500 text-xs">$0</div>
+        </button>
+        <button onclick="placeBet('large')" class="bet-option h-36 rounded-[2.5rem] border-b-4 border-red-900 shadow-xl">
+            <div id="stack-large" class="chip-stack"></div>
+            <span class="text-red-500 font-black text-2xl uppercase italic leading-none">Large</span>
+            <div id="val-large" class="mt-1 font-black text-yellow-500 text-xs">$0</div>
+        </button>
+        <button onclick="placeBet('draw')" class="bet-option col-span-2 py-5 rounded-[2.5rem] border-b-4 border-green-900 shadow-xl">
+            <div id="stack-draw" class="chip-stack"></div>
+            <span class="text-green-400 font-black text-xl uppercase tracking-tighter">Draw (7) · 1:5</span>
+            <div id="val-draw" class="font-black text-yellow-500 text-xs mt-1">$0</div>
+        </button>
+    </div>
+
+    <!-- 籌碼托盤 -->
+    <div class="w-full max-w-md bg-black/50 p-4 rounded-full flex justify-around items-center border border-white/10 shadow-2xl">
+        <div onclick="setSelectedChip(10, this)" class="chip-btn cursor-pointer transition-all"><div class="w-12 h-12 rounded-full border-2 border-dashed border-white/50 bg-blue-600 flex items-center justify-center font-black text-[10px]">10</div></div>
+        <div onclick="setSelectedChip(50, this)" class="chip-btn cursor-pointer transition-all"><div class="w-12 h-12 rounded-full border-2 border-dashed border-white/50 bg-red-600 flex items-center justify-center font-black text-[10px]">50</div></div>
+        <div onclick="setSelectedChip(100, this)" class="chip-btn cursor-pointer transition-all"><div class="w-12 h-12 rounded-full border-2 border-dashed border-white/50 bg-gray-800 flex items-center justify-center font-black text-[10px]">100</div></div>
+        <div onclick="setSelectedChip(500, this)" class="chip-btn cursor-pointer transition-all"><div class="w-12 h-12 rounded-full border-2 border-dashed border-white/50 bg-purple-700 flex items-center justify-center font-black text-[10px]">500</div></div>
+    </div>
+
+    <div class="w-full max-w-md mt-6">
+        <button onclick="resetBets()" class="w-full py-3 text-gray-500 font-bold text-[10px] uppercase tracking-[0.3em] hover:text-white transition">重設桌面下注</button>
+    </div>
+
+    <div id="toast" class="fixed top-24 bg-yellow-600 text-white px-8 py-3 rounded-full shadow-2xl transition-all duration-500 opacity-0 pointer-events-none z-[300] font-black text-xs border border-white/20">Toast</div>
 
     <script>
-        // === 資料庫區 ===
-        const KEYWORD_DATA = {
-            prefixes: [
-                "2025最新", "PTT熱議", "Dcard推薦", "網友激推", "限時免費", "必買", "Top10", "獨家", 
-                "最新曝光", "懶人包", "震驚", "快速上手", "免運", "買一送一", "官方", "平價", "高CP值", 
-                "入門款", "旗艦級", "隱藏版", "在地人推薦", "排隊名店", "股神", "AI生成", "ChatGPT教你",
-                "最新民調", "颱風假", "連假攻略", "報稅", "補助申請", "2024回顧", "2025預測", "最強", 
-                "神級", "夢幻", "絕美", "IG打卡", "爆紅", "流量密碼", "黑馬", "緊急", "重大宣布", 
-                "限時優惠", "最後機會", "全網瘋傳"
-            ],
-            topics: [
-                "iPhone 16", "iPhone 17", "PS5 Pro", "Switch 2", "iPad Air", "MacBook", "AirPods", 
-                "特斯拉", "電動車", "AI手機", "NVIDIA", "台積電", "ChatGPT", "Claude 3", "Midjourney", 
-                "Python", "JavaScript", "區塊鏈", "比特幣", "虛擬貨幣", "機械鍵盤", "電競滑鼠", "4K螢幕", 
-                "統一發票", "高鐵訂票", "台鐵", "捷運", "房價", "租屋", "房貸補貼", "基本工資", "年終獎金", 
-                "口罩", "流感疫苗", "登革熱", "健保", "勞保", "颱風", "地震", "寒流", "空氣清淨機", "除濕機", 
-                "Netflix", "Disney+", "YouTube", "Spotify", "金曲獎", "金馬獎", "奧斯卡", "大巨蛋", "演唱會", 
-                "五月天", "周杰倫", "BLACKPINK", "NewJeans", "職棒", "中職", "NBA", "大谷翔平", "世界盃", 
-                "日本旅遊", "韓國旅遊", "泰國旅遊", "廉航機票", "東京迪士尼", "環球影城", "米其林", "必比登", 
-                "拉麵", "火鍋", "燒肉", "吃到飽", "早午餐", "甜點", "手搖飲", "夜市", "露營", "溫泉", 
-                "00878", "0050", "00929", "ETF", "存股", "美股", "台股", "黃金價格", "日幣匯率", "美金匯率"
-            ],
-            suffixes: [
-                "評價", "懶人包", "攻略", "比較", "價格", "上市時間", "預購", "災情", "優缺點", "開箱", 
-                "教學", "下載", "註冊", "優惠碼", "折扣", "怎麼買", "好吃嗎", "值得買嗎", "連結", "官網", 
-                "名單", "查詢", "申請", "資格", "條件", "時間表", "路線圖", "訂位", "外送", "菜單", 
-                "行情", "走勢", "預測", "分析", "心得", "退費", "客服", "保固", "維修", "尺寸"
-            ]
-        };
+        let initialAmount = 0;
+        let balance = 0;
+        let selectedChip = 10;
+        let bets = { small: 0, large: 0, draw: 0 };
+        let diceValues = [1, 1];
+        let gameState = 'IDLE';
+        let history = []; // 儲存歷史記錄
 
-        // === 邏輯區 ===
-        document.addEventListener('DOMContentLoaded', () => {
-            // 1. 初始化狀態與變數
-            const statusEl = document.getElementById('dataStatus');
-            let currentKeywords = [];
-            let userApiKey = localStorage.getItem('gemini_api_key') || "";
-            let toastTimeout;
+        const chipColors = { 10: 'bg-blue-600', 50: 'bg-red-600', 100: 'bg-gray-800', 500: 'bg-purple-700' };
 
-            if (typeof KEYWORD_DATA === 'undefined') {
-                statusEl.innerText = "❌ 內部資料庫錯誤";
-                statusEl.classList.add('text-red-500');
+        function showInitModal() {
+            document.getElementById('summary-modal').style.display = 'none';
+            document.getElementById('init-modal').style.display = 'flex';
+            bets = { small: 0, large: 0, draw: 0 };
+            history = []; // 清空歷史
+            updateHistoryUI();
+            document.querySelectorAll('.chip-stack').forEach(s => s.innerHTML = '');
+            document.getElementById('cup').style.transform = 'translateY(0)';
+            document.getElementById('cup').style.opacity = '1';
+            document.getElementById('dices-area').style.opacity = '0';
+            gameState = 'IDLE';
+            updateActionBtn();
+            updateUI();
+        }
+
+        function startGame() {
+            const val = parseInt(document.getElementById('init-balance-input').value);
+            if (val <= 0 || isNaN(val)) return showToast("請輸入正確金額");
+            initialAmount = val;
+            balance = val;
+            updateUI();
+            document.getElementById('init-modal').style.display = 'none';
+            setSelectedChip(10, document.querySelectorAll('.chip-btn')[0]);
+        }
+
+        function handleMainAction() {
+            if (gameState === 'IDLE' || gameState === 'REVEALED') startNewRound();
+            else if (gameState === 'BETTING') revealResult();
+        }
+
+        function startNewRound() {
+            gameState = 'SHAKING';
+            bets = { small: 0, large: 0, draw: 0 };
+            document.querySelectorAll('.chip-stack').forEach(s => s.innerHTML = '');
+            updateActionBtn();
+            
+            document.getElementById('status-display').textContent = "Shaking...";
+            document.getElementById('dices-area').style.opacity = '0';
+            document.getElementById('dices-area').style.transform = 'scale(0.5)';
+            
+            const cup = document.getElementById('cup');
+            cup.style.transform = 'translateY(0)';
+            cup.style.opacity = '1';
+            cup.classList.add('shake-anim');
+
+            diceValues = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+
+            setTimeout(() => {
+                cup.classList.remove('shake-anim');
+                gameState = 'BETTING';
+                document.getElementById('status-display').textContent = "請下注";
+                updateActionBtn();
+                updateUI();
+                applyDiceRotation(document.getElementById('dice1'), diceValues[0]);
+                applyDiceRotation(document.getElementById('dice2'), diceValues[1]);
+            }, 1200);
+        }
+
+        function revealResult() {
+            const total = Object.values(bets).reduce((a, b) => a + b, 0);
+            if (total === 0) return showToast("請至少下注一個區域");
+
+            gameState = 'REVEALING';
+            updateActionBtn();
+
+            const cup = document.getElementById('cup');
+            cup.style.transform = 'translateY(-180px) rotate(10deg)';
+            cup.style.opacity = '0';
+            
+            setTimeout(() => {
+                document.getElementById('dices-area').style.opacity = '1';
+                document.getElementById('dices-area').style.transform = 'scale(1.3)';
+                checkWin();
+            }, 500);
+        }
+
+        function checkWin() {
+            const sum = diceValues[0] + diceValues[1];
+            const isPair = diceValues[0] === diceValues[1];
+            let won = 0;
+
+            if (sum >= 2 && sum <= 6) { if (bets.small > 0) won += bets.small * 2 + (isPair ? bets.small : 0); }
+            else if (sum >= 8 && sum <= 12) { if (bets.large > 0) won += bets.large * 2 + (isPair ? bets.large : 0); }
+            else if (sum === 7) { if (bets.draw > 0) won += bets.draw * 6; }
+
+            if (won > 0) {
+                balance += won;
+                showToast(`🏆 贏得 $${won}!`);
+            } else {
+                showToast("未中獎");
+            }
+
+            // 更新歷史紀錄
+            addHistory(sum);
+
+            document.getElementById('status-display').textContent = `點數: ${sum}` + (isPair ? " [對子]" : "");
+            gameState = 'REVEALED';
+            updateActionBtn();
+            updateUI();
+
+            if (balance === 0) {
+                setTimeout(() => {
+                    showToast("資金已用罄，自動結算");
+                    endGame();
+                }, 1500);
+            }
+        }
+
+        function addHistory(sum) {
+            let type = '';
+            if (sum >= 2 && sum <= 6) type = 'S';
+            else if (sum >= 8 && sum <= 12) type = 'L';
+            else type = 'D';
+
+            history.unshift({ sum, type }); // 加在最前面
+            if (history.length > 5) history.pop(); // 只留最近 5 筆
+            updateHistoryUI();
+        }
+
+        function updateHistoryUI() {
+            const container = document.getElementById('history-container');
+            if (history.length === 0) {
+                container.innerHTML = '<span class="text-[9px] text-white/20 italic">No data yet</span>';
                 return;
             }
-            const totalCombos = BigInt(KEYWORD_DATA.prefixes.length) * BigInt(KEYWORD_DATA.topics.length) * BigInt(KEYWORD_DATA.suffixes.length);
-            statusEl.innerText = `✅ 資料庫 ready (${totalCombos.toLocaleString()} 種組合)`;
 
-            // 2. 定義函式
-            function generateKeywords() {
-                const count = parseInt(document.getElementById('countSelect').value);
-                currentKeywords = generateCombinations(count);
-                renderResults(currentKeywords);
-                document.getElementById('copyBtn').classList.remove('hidden');
-                document.getElementById('instruction').classList.remove('hidden');
-            }
+            container.innerHTML = history.map(h => {
+                let colorClass = '';
+                if (h.type === 'S') colorClass = 'bg-blue-600/80';
+                else if (h.type === 'L') colorClass = 'bg-red-600/80';
+                else colorClass = 'bg-green-600/80';
+                
+                return `<div class="history-tag ${colorClass}">${h.sum}</div>`;
+            }).join('');
+        }
 
-            function generateCombinations(count) {
-                const results = new Set();
-                const maxAttempts = count * 10;
-                let attempts = 0;
-                const { prefixes, topics, suffixes } = KEYWORD_DATA;
-
-                while (results.size < count && attempts < maxAttempts) {
-                    const pattern = Math.random();
-                    let keyword = "";
-                    const topic = getRandomItem(topics);
-                    const prefix = getRandomItem(prefixes);
-                    const suffix = getRandomItem(suffixes);
-
-                    if (pattern < 0.25) keyword = `${topic} ${suffix}`;
-                    else if (pattern < 0.5) keyword = `${prefix} ${topic}`;
-                    else if (pattern < 0.75) keyword = `${prefix} ${topic} ${suffix}`;
-                    else {
-                        const topic2 = getRandomItem(topics);
-                        keyword = (topic !== topic2) ? `${topic} ${topic2}` : `${topic} ${suffix}`;
-                    }
-                    results.add(keyword);
-                    attempts++;
-                }
-                return Array.from(results);
-            }
-
-            function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-            function renderResults(keywords) {
-                const container = document.getElementById('resultList');
-                container.innerHTML = '';
-                keywords.forEach((keyword, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'keyword-item fade-in group'; 
-                    div.innerHTML = `
-                        <div class="flex items-center gap-3 flex-grow overflow-hidden" onclick="copySingleText('${keyword}', this)">
-                            <span class="index-badge group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">${index + 1}</span>
-                            <div class="flex flex-col cursor-pointer flex-grow overflow-hidden">
-                                <span class="font-medium text-gray-800 text-lg truncate">${keyword}</span>
-                                <span class="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">點擊複製</span>
-                            </div>
-                        </div>
-                        <button class="ai-btn p-2 rounded-full hover:bg-purple-50 shrink-0" onclick="triggerAI('${keyword}')" title="使用 AI 生成文案">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" /></svg>
-                            <span>AI 靈感</span>
-                        </button>
-                    `;
-                    container.appendChild(div);
-                });
-            }
-
-            function copyAll() {
-                 if (currentKeywords.length === 0) return;
-                 performCopy(currentKeywords.join('\n'));
-                 showToast("已複製全部關鍵字！");
-            }
-
-            function performCopy(text) {
-                // 在受限環境 (如 iframe 或特定預覽視窗) 中，Clipboard API 常被封鎖
-                // 為了確保最高相容性，我們在此處強制使用傳統的 document.execCommand 方法
-                const ta = document.createElement("textarea");
-                ta.value = text;
-                ta.style.position = "fixed";
-                ta.style.left = "-9999px";
-                ta.style.top = "0";
-                document.body.appendChild(ta);
-                ta.focus();
-                ta.select();
-                try {
-                    document.execCommand('copy');
-                } catch (err) {
-                    console.error('Copy failed', err);
-                }
-                document.body.removeChild(ta);
-            }
-
-            function showToast(message) {
-                const toast = document.getElementById('toast');
-                toast.innerText = message; toast.classList.remove('opacity-0');
-                if (toastTimeout) clearTimeout(toastTimeout);
-                toastTimeout = setTimeout(() => toast.classList.add('opacity-0'), 2000);
-            }
-
-            // 3. 掛載全域函式
-            window.copySingleText = function(text, element) {
-                performCopy(text);
-                const parent = element.closest('.keyword-item');
-                parent.classList.remove('click-feedback');
-                void parent.offsetWidth; 
-                parent.classList.add('click-feedback');
-                showToast(`已複製：${text}`);
-            }
-
-            window.triggerAI = async function(keyword) {
-                if (!userApiKey) { openSettingsModal(); alert("請先設定 Gemini API Key 才能使用 AI 功能！"); return; }
-                const modal = document.getElementById('aiModal');
-                const content = document.getElementById('aiModalContent');
-                document.getElementById('aiModalKeyword').innerText = keyword;
-                modal.classList.remove('hidden');
-                content.innerHTML = `<div class="text-center py-10 text-gray-500 loading-dots">正在詢問 Gemini 關於「${keyword}」的靈感</div>`;
-
-                try {
-                    const prompt = `你是社群行銷專家。針對關鍵字「${keyword}」請生成：\n1. 3個吸睛標題\n2. 貼文大綱\n3. 10個 Hashtags\n請用 Markdown 排版。`;
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                    });
-                    const data = await response.json();
-                    if (data.error) throw new Error(data.error.message);
-                    content.innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
-                } catch (error) {
-                    content.innerHTML = `<div class="text-center text-red-500 py-5"><p class="font-bold">生成失敗</p><p class="text-sm mt-2">${error.message}</p></div>`;
-                }
-            }
-
-            window.closeAiModal = function() { document.getElementById('aiModal').classList.add('hidden'); }
+        function updateActionBtn() {
+            const btn = document.getElementById('main-action-btn');
+            btn.classList.remove('opacity-50', 'pointer-events-none');
             
-            window.copyAiContent = function() {
-                performCopy(document.getElementById('aiModalContent').innerText);
-                showToast("AI 內容已複製");
+            if (gameState === 'IDLE' || gameState === 'REVEALED') {
+                btn.textContent = "開始搖骰";
+                btn.className = "w-full py-5 bg-gradient-to-b from-yellow-500 to-yellow-700 text-yellow-950 rounded-[2rem] font-black text-lg shadow-2xl transition transform active:scale-95 uppercase tracking-widest";
+            } else if (gameState === 'SHAKING' || gameState === 'REVEALING') {
+                btn.textContent = gameState === 'SHAKING' ? "搖骰中..." : "揭開中...";
+                btn.classList.add('opacity-50', 'pointer-events-none');
+            } else if (gameState === 'BETTING') {
+                btn.textContent = "揭開結果";
+                btn.className = "w-full py-5 bg-gradient-to-b from-green-500 to-green-700 text-green-950 rounded-[2rem] font-black text-lg shadow-2xl transition transform active:scale-95 uppercase tracking-widest";
             }
-            
-            window.openSettingsModal = function() {
-                document.getElementById('settingsModal').classList.remove('hidden');
-                document.getElementById('apiKeyInput').value = userApiKey;
-            }
-            
-            window.closeSettingsModal = function() { document.getElementById('settingsModal').classList.add('hidden'); }
-            
-            window.saveApiKey = function() {
-                const input = document.getElementById('apiKeyInput').value.trim();
-                if (input) {
-                    userApiKey = input; localStorage.setItem('gemini_api_key', input);
-                    closeSettingsModal(); showToast("API Key 已儲存");
-                }
-            }
+        }
 
-            // 4. 綁定事件監聽
-            document.getElementById('generateBtn').addEventListener('click', generateKeywords);
-            document.getElementById('copyBtn').addEventListener('click', copyAll);
-            document.getElementById('settingsBtn').addEventListener('click', window.openSettingsModal);
-        });
+        function placeBet(type) {
+            if (gameState !== 'BETTING') return;
+            if (balance < selectedChip) return showToast("餘額不足");
+            balance -= selectedChip;
+            bets[type] += selectedChip;
+            const stack = document.getElementById(`stack-${type}`);
+            const chip = document.createElement('div');
+            chip.className = `chip-visual ${chipColors[selectedChip]}`;
+            chip.textContent = selectedChip;
+            const rot = (Math.random() - 0.5) * 12;
+            const xOff = (Math.random() - 0.5) * 5;
+            chip.style.transform = `rotate(${rot}deg) translateX(${xOff}px)`;
+            stack.appendChild(chip);
+            updateUI();
+        }
+
+        function resetBets() {
+            if (gameState !== 'BETTING') return;
+            balance += (bets.small + bets.large + bets.draw);
+            bets = { small: 0, large: 0, draw: 0 };
+            document.querySelectorAll('.chip-stack').forEach(s => s.innerHTML = '');
+            updateUI();
+        }
+
+        function endGame() {
+            const profit = balance - initialAmount;
+            document.getElementById('sum-init').textContent = `$${initialAmount}`;
+            document.getElementById('sum-final').textContent = `$${balance}`;
+            const profitEl = document.getElementById('sum-profit');
+            
+            if (profit > 0) {
+                profitEl.textContent = `+$${profit}`;
+                profitEl.className = 'font-black text-green-400';
+            } else if (profit < 0) {
+                profitEl.textContent = `-$${Math.abs(profit)}`;
+                profitEl.className = 'font-black text-red-500';
+            } else {
+                profitEl.textContent = `$0`;
+                profitEl.className = 'font-black text-white';
+            }
+            document.getElementById('summary-modal').style.display = 'flex';
+        }
+
+        function updateUI() {
+            document.getElementById('balance-display').textContent = `$${balance}`;
+            const total = Object.values(bets).reduce((a, b) => a + b, 0);
+            document.getElementById('total-bet-display').textContent = `$${total}`;
+            document.getElementById('val-small').textContent = `$${bets.small}`;
+            document.getElementById('val-large').textContent = `$${bets.large}`;
+            document.getElementById('val-draw').textContent = `$${bets.draw}`;
+            document.getElementById('betting-board').style.opacity = gameState === 'BETTING' ? '1' : '0.4';
+            document.getElementById('betting-board').style.pointerEvents = gameState === 'BETTING' ? 'auto' : 'none';
+        }
+
+        function setSelectedChip(val, el) {
+            selectedChip = val;
+            document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('scale-125'));
+            el.classList.add('scale-125');
+        }
+
+        function applyDiceRotation(el, value) {
+            let rx = 0, ry = 0;
+            switch(value) {
+                case 1: rx = 0; ry = 0; break;
+                case 2: rx = -90; ry = 0; break;
+                case 3: rx = 0; ry = -90; break;
+                case 4: rx = 0; ry = 90; break;
+                case 5: rx = 90; ry = 0; break;
+                case 6: rx = 180; ry = 0; break;
+            }
+            el.style.transform = `rotateX(${rx + 1080}deg) rotateY(${ry + 1080}deg)`;
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.opacity = "1";
+            setTimeout(() => t.style.opacity = "0", 2000);
+        }
+
+        updateUI();
     </script>
 </body>
 </html>
+
